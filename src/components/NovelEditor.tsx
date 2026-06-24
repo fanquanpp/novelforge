@@ -2,18 +2,22 @@
 //
 // 功能概述：
 // 基于 TipTap 的小说创作编辑器，支持富文本编辑、自动保存、
-// 字数统计等功能。适配 FANDEX 暗黑主题。
+// 字数统计、特色自动化功能（剧本角色名/散文缩进/诗歌排版）、
+// TXT 导出等功能。适配 FANDEX 暗黑主题。
 //
 // 模块职责：
 // 1. 提供 TipTap 编辑器实例
 // 2. 自动加载与保存文件内容
 // 3. 实时统计字数
-// 4. 工具栏: 加粗/斜体/标题/列表/引用等
+// 4. 根据项目类型加载特色扩展
+// 5. 支持 TXT 导出
+// 6. 工具栏: 加粗/斜体/标题/列表/引用/诗歌/歌词等
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import type { Extensions } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Bold,
   Italic,
@@ -26,8 +30,15 @@ import {
   Redo,
   Save,
   Loader2,
+  Download,
+  Music,
+  Pilcrow,
 } from "lucide-react";
 import { readFile, writeFile } from "../lib/api";
+import { useAppStore } from "../lib/store";
+import { CharacterMention } from "../lib/characterMention";
+import { IndentParagraph } from "../lib/indentParagraph";
+import { PoetryFormat, POETRY_STYLES } from "../lib/poetryFormat";
 
 // 编辑器属性接口
 interface NovelEditorProps {
@@ -39,28 +50,94 @@ interface NovelEditorProps {
 // 输入: filePath 文件路径
 // 输出: 渲染编辑器界面
 // 流程:
-//   1. 文件路径变化时加载内容
-//   2. 用户编辑时实时统计字数
-//   3. Ctrl+S 或自动保存时写入文件
+//   1. 根据项目类型加载特色扩展
+//   2. 文件路径变化时加载内容
+//   3. 用户编辑时实时统计字数
+//   4. Ctrl+S 或自动保存时写入文件
+//   5. 支持 TXT 导出
 export default function NovelEditor({ filePath }: NovelEditorProps) {
+  const { currentProject } = useAppStore();
   const [wordCount, setWordCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [characters, setCharacters] = useState<string[]>([]);
 
-  // 创建 TipTap 编辑器实例
+  // 项目类型判断
   // 输入: 无
-  // 输出: Editor 实例
-  // 流程: 配置扩展与占位文本
-  const editor = useEditor({
-    extensions: [
+  // 输出: 项目类型字符串
+  // 流程: 从当前项目元数据读取类型
+  const projectType = currentProject?.meta?.type || "standard";
+  const isScript = projectType === "script";
+  const isEssay = projectType === "essay";
+
+  // 加载剧本角色名列表
+  // 输入: 无
+  // 输出: 无
+  // 流程: 如果是剧本类型，从角色名册文件读取角色名
+  useEffect(() => {
+    if (!isScript || !currentProject) {
+      setCharacters([]);
+      return;
+    }
+    const rosterPath = `${currentProject.path}\\角色\\角色名册.md`;
+    readFile(rosterPath)
+      .then((content) => {
+        // 解析角色名册，每行一个角色名，跳过 markdown 标题与空行
+        const names = content
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line && !line.startsWith("#") && !line.startsWith(">") && !line.startsWith("-"))
+          .filter((line) => !/^[-=]{3,}$/.test(line));
+        setCharacters(names);
+      })
+      .catch(() => {
+        // 角色名册不存在时使用空列表
+        setCharacters([]);
+      });
+  }, [isScript, currentProject]);
+
+  // 构建扩展列表
+  // 输入: 无
+  // 输出: TipTap 扩展数组
+  // 流程: 根据项目类型条件性加载特色扩展
+  const extensions: Extensions = useMemo(() => {
+    const exts: Extensions = [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
       Placeholder.configure({
         placeholder: "开始你的创作...",
       }),
-    ],
+    ];
+
+    // 散文类型：启用首行缩进
+    if (isEssay) {
+      exts.push(IndentParagraph.configure({ enabled: true }));
+    }
+
+    // 剧本类型：启用角色名自动选择
+    if (isScript) {
+      exts.push(
+        CharacterMention.configure({
+          characters,
+          onSelect: () => {},
+        })
+      );
+    }
+
+    // 所有类型都启用诗歌/歌词排版（快捷键触发）
+    exts.push(PoetryFormat.configure({ enabled: true }));
+
+    return exts;
+  }, [isEssay, isScript, characters]);
+
+  // 创建 TipTap 编辑器实例
+  // 输入: 无
+  // 输出: Editor 实例
+  // 流程: 配置扩展与占位文本
+  const editor = useEditor({
+    extensions,
     content: "",
     editorProps: {
       attributes: {
@@ -147,6 +224,35 @@ export default function NovelEditor({ filePath }: NovelEditorProps) {
     }
   }, [editor, filePath, dirty]);
 
+  // 导出为 TXT 文件
+  // 输入: 无
+  // 输出: 无
+  // 流程: 将编辑器内容转为纯文本并触发下载
+  const handleExportTxt = useCallback(async () => {
+    if (!editor) return;
+    try {
+      const text = editor.getText();
+      // 构造文件名：原文件名 + .txt
+      let txtName = "导出.txt";
+      if (filePath) {
+        const baseName = filePath.split(/[\\/]/).pop() || "导出";
+        txtName = baseName.replace(/\.(md|markdown|txt)$/i, "") + ".txt";
+      }
+      // 使用 Blob 触发浏览器下载
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = txtName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setLoadError(`导出失败: ${e}`);
+    }
+  }, [editor, filePath]);
+
   // 键盘快捷键: Ctrl+S 保存
   // 输入: 无
   // 输出: 无
@@ -201,6 +307,9 @@ export default function NovelEditor({ filePath }: NovelEditorProps) {
 
   return (
     <div className="flex-1 flex flex-col bg-nf-bg overflow-hidden">
+      {/* 注入诗歌/歌词样式 */}
+      <style dangerouslySetInnerHTML={{ __html: POETRY_STYLES }} />
+
       {/* 工具栏 */}
       <div className="flex items-center gap-1 px-4 py-2 border-b border-nf-border-light bg-nf-bg-sidebar">
         <ToolbarButton
@@ -259,6 +368,40 @@ export default function NovelEditor({ filePath }: NovelEditorProps) {
           <Quote className="w-4 h-4" />
         </ToolbarButton>
         <Divider />
+        {/* 诗歌排版按钮 */}
+        <ToolbarButton
+          onClick={() => {
+            // 触发诗歌样式快捷键
+            const event = new KeyboardEvent("keydown", {
+              key: "P",
+              ctrlKey: true,
+              shiftKey: true,
+              bubbles: true,
+            });
+            document.querySelector(".ProseMirror")?.dispatchEvent(event);
+          }}
+          active={false}
+          title="诗歌排版 (Ctrl+Shift+P)"
+        >
+          <Pilcrow className="w-4 h-4" />
+        </ToolbarButton>
+        {/* 歌词排版按钮 */}
+        <ToolbarButton
+          onClick={() => {
+            const event = new KeyboardEvent("keydown", {
+              key: "L",
+              ctrlKey: true,
+              shiftKey: true,
+              bubbles: true,
+            });
+            document.querySelector(".ProseMirror")?.dispatchEvent(event);
+          }}
+          active={false}
+          title="歌词排版 (Ctrl+Shift+L)"
+        >
+          <Music className="w-4 h-4" />
+        </ToolbarButton>
+        <Divider />
         <ToolbarButton
           onClick={() => editor?.chain().focus().undo().run()}
           active={false}
@@ -278,6 +421,15 @@ export default function NovelEditor({ filePath }: NovelEditorProps) {
         <div className="ml-auto flex items-center gap-3 text-xs text-nf-text-tertiary">
           <span>{wordCount} 字</span>
           {dirty && <span className="text-fandex-tertiary">未保存</span>}
+          {/* TXT 导出按钮 */}
+          <button
+            onClick={handleExportTxt}
+            title="导出为 TXT"
+            className="flex items-center gap-1 px-2 py-1 rounded text-fandex-secondary hover:bg-nf-bg-hover transition-fast"
+          >
+            <Download className="w-3.5 h-3.5" />
+            TXT
+          </button>
           <button
             onClick={handleSave}
             disabled={!dirty || saving}
@@ -292,6 +444,24 @@ export default function NovelEditor({ filePath }: NovelEditorProps) {
           </button>
         </div>
       </div>
+
+      {/* 剧本类型提示条 */}
+      {isScript && characters.length > 0 && (
+        <div className="px-4 py-1.5 bg-nf-bg-hover/30 border-b border-nf-border-light text-xs text-nf-text-tertiary flex items-center gap-2">
+          <span className="text-fandex-primary">剧本模式</span>
+          <span>·</span>
+          <span>在空行按 Tab 键呼出角色名选择（共 {characters.length} 个角色）</span>
+        </div>
+      )}
+
+      {/* 散文类型提示条 */}
+      {isEssay && (
+        <div className="px-4 py-1.5 bg-nf-bg-hover/30 border-b border-nf-border-light text-xs text-nf-text-tertiary flex items-center gap-2">
+          <span className="text-fandex-secondary">散文模式</span>
+          <span>·</span>
+          <span>已启用首行双字缩进</span>
+        </div>
+      )}
 
       {/* 编辑器内容区 */}
       <div className="flex-1 overflow-y-auto">

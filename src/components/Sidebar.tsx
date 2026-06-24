@@ -20,12 +20,15 @@ import {
   FolderOpen,
   ChevronLeft,
   Plus,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   useAppStore,
   CATEGORY_NAMES,
   type SidebarCategory,
 } from "../lib/store";
+import { useThemeStore } from "../lib/themeStore";
 
 // 图标映射
 const ICON_MAP: Record<SidebarCategory, React.ComponentType<{ className?: string }>> = {
@@ -65,6 +68,7 @@ interface SidebarProps {
 export default function Sidebar({ onCreateFile }: SidebarProps) {
   const { currentProject, activeCategory, setActiveCategory, closeProject } =
     useAppStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   return (
     <div className="w-56 min-w-[220px] border-r border-nf-border-light bg-nf-bg-sidebar flex flex-col">
@@ -110,8 +114,20 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
         })}
       </div>
 
-      {/* 底部: 新建文件按钮 */}
-      <div className="px-3 py-3 border-t border-nf-border-light">
+      {/* 底部: 主题切换与新建文件按钮 */}
+      <div className="px-3 py-3 border-t border-nf-border-light space-y-2">
+        <button
+          onClick={toggleTheme}
+          title={theme === "dark" ? "切换到亮色主题" : "切换到暗色主题"}
+          className="w-full flex items-center justify-center gap-1.5 py-2 text-sm text-nf-text-secondary hover:text-fandex-tertiary border border-nf-border-light hover:border-fandex-tertiary/50 rounded-lg transition-fast"
+        >
+          {theme === "dark" ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
+          {theme === "dark" ? "亮色主题" : "暗色主题"}
+        </button>
         <button
           onClick={onCreateFile}
           className="w-full flex items-center justify-center gap-1.5 py-2 text-sm text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/50 rounded-lg transition-fast"
