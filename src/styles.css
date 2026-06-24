@@ -89,3 +89,98 @@ html, body, #root {
   background: rgba(110, 168, 254, 0.3);
   color: #fff;
 }
+
+/* ========== TipTap 编辑器 ProseMirror 样式 ========== */
+.ProseMirror {
+  color: var(--fandex-text);
+  font-size: 16px;
+  line-height: 1.8;
+  outline: none;
+}
+
+.ProseMirror h1 {
+  font-size: 1.8em;
+  font-weight: 700;
+  margin: 0.8em 0 0.4em;
+  color: var(--fandex-text);
+}
+
+.ProseMirror h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+  color: var(--fandex-text);
+}
+
+.ProseMirror h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin: 0.5em 0 0.2em;
+  color: var(--fandex-text-secondary);
+}
+
+.ProseMirror p {
+  margin: 0.5em 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--fandex-primary);
+  padding-left: 1em;
+  margin: 0.8em 0;
+  color: var(--fandex-text-secondary);
+  font-style: italic;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.ProseMirror li {
+  margin: 0.2em 0;
+}
+
+.ProseMirror strong {
+  font-weight: 700;
+  color: var(--fandex-text);
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror code {
+  background: var(--fandex-bg-code);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+}
+
+.ProseMirror pre {
+  background: var(--fandex-bg-code);
+  padding: 0.8em;
+  border-radius: 6px;
+  margin: 0.8em 0;
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* 占位符样式 */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--fandex-text-tertiary);
+  pointer-events: none;
+  height: 0;
+}
+
+/* 光标样式 */
+.ProseMirror:focus {
+  outline: none;
+}

@@ -1,7 +1,20 @@
-import React from "react";
-import { Clock, BarChart3 } from "lucide-react";
+// 项目卡片组件
+//
+// 功能概述：
+// 渲染单张项目卡片，展示项目名称、类型、字数、更新时间。
+// 点击卡片打开项目进入工作台。
+//
+// 模块职责：
+// 1. 渲染渐变头部与类型标签
+// 2. 显示项目名称与元数据
+// 3. 悬浮动画效果
+// 4. 点击触发打开项目
 
-// 项目卡片属性接口
+import { Clock, BarChart3 } from "lucide-react";
+import { useAppStore } from "../lib/store";
+import type { ProjectInfo } from "../lib/api";
+
+// 项目卡片数据接口(用于显示)
 export interface ProjectData {
   id: string;
   name: string;
@@ -12,14 +25,35 @@ export interface ProjectData {
   gradient: string;
 }
 
-// 项目卡片组件 - FANDEX 美术风格
-// 输入: project 项目数据对象
-// 输出: 渲染单张项目卡片
-// 流程: 渲染渐变头部、类型标签、项目名称、字数与更新时间
-export default function ProjectCard({ project }: { project: ProjectData }) {
+// 后端项目信息(用于打开项目)
+export interface ProjectCardProps {
+  project: ProjectData;
+  projectInfo?: ProjectInfo;
+}
+
+// 项目卡片组件
+// 输入: project 显示数据, projectInfo 后端信息
+// 输出: 渲染项目卡片
+// 流程: 渲染卡片,点击时调用 openProject
+export default function ProjectCard({ project, projectInfo }: ProjectCardProps) {
+  const { openProject } = useAppStore();
+
+  // 处理卡片点击
+  // 输入: 无
+  // 输出: 无
+  // 流程: 如果有 projectInfo 则打开项目
+  const handleClick = () => {
+    if (projectInfo) {
+      openProject(projectInfo);
+    }
+  };
+
   return (
-    <div className="group bg-nf-bg-card/40 border border-nf-border-light hover:border-fandex-primary/30 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-base transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[180px]">
-      {/* 渐变头部区域 - FANDEX 品牌色渐变 */}
+    <div
+      onClick={handleClick}
+      className="group bg-nf-bg-card/40 border border-nf-border-light hover:border-fandex-primary/30 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-base transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[180px]"
+    >
+      {/* 渐变头部区域 */}
       <div className={`h-12 bg-gradient-to-r ${project.gradient} opacity-70 group-hover:opacity-90 transition-base relative`}>
         <div className="absolute -bottom-3.5 left-4">
           <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${project.typeColor} shadow-sm backdrop-blur-md`}>

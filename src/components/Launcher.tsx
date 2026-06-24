@@ -23,6 +23,7 @@ import {
   type ProjectInfo,
   type ProjectType,
 } from "../lib/api";
+import { useAppStore } from "../lib/store";
 
 // 启动器主组件
 // 输入: 无
@@ -39,6 +40,7 @@ export default function Launcher() {
   const [selectedType, setSelectedType] = useState<ProjectType>("standard");
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [scanDir, setScanDir] = useState<string>("");
+  const { openProject } = useAppStore();
 
   // 初始化: 尝试从 localStorage 读取上次扫描目录
   // 输入: 无
@@ -78,14 +80,25 @@ export default function Launcher() {
   // 创建项目成功回调
   // 输入: projectPath 项目路径
   // 输出: 无
-  // 流程: 记录扫描目录并重新加载项目列表
-  const handleCreateSuccess = (projectPath: string) => {
+  // 流程: 记录扫描目录,重新加载项目列表,并打开新项目
+  const handleCreateSuccess = async (projectPath: string) => {
     setDialogOpen(false);
     // 从项目路径提取父目录
     const parentDir = projectPath.substring(0, projectPath.lastIndexOf("\\"));
     setScanDir(parentDir);
     localStorage.setItem("novelforge_last_dir", parentDir);
-    loadProjects(parentDir);
+    // 重新加载项目列表
+    try {
+      const list = await scanProjects(parentDir);
+      setProjects(list);
+      // 查找并打开新创建的项目
+      const newProject = list.find((p) => p.path === projectPath);
+      if (newProject) {
+        openProject(newProject);
+      }
+    } catch (e) {
+      console.error("刷新项目列表失败:", e);
+    }
   };
 
   // 导入已有项目
@@ -255,7 +268,11 @@ export default function Launcher() {
         {/* 项目卡片网格 */}
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
           {filteredProjects.map((project) => (
-            <ProjectCard key={project.path} project={toCardData(project)} />
+            <ProjectCard
+              key={project.path}
+              project={toCardData(project)}
+              projectInfo={project}
+            />
           ))}
 
           {/* 导入本地项目卡片 */}
