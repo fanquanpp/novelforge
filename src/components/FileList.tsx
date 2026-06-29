@@ -91,6 +91,18 @@ function TreeNodeList({
           <span className="text-[10px] text-nf-text-tertiary">
             {node.children?.length || 0} {t("filelist.itemUnit")}
           </span>
+          <button
+            onClick={(e) => onRename(node, e)}
+            className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto p-1 text-nf-text-tertiary hover:text-fandex-primary transition duration-fast"
+          >
+            <PenLine className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => onDelete(node, e)}
+            className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto p-1 text-nf-text-tertiary hover:text-red-400 transition duration-fast"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
         {expanded &&
           node.children?.map((child) => (
@@ -176,7 +188,7 @@ function TreeNodeGrid({
     return (
       <div className="col-span-2">
         <div
-          className="flex items-center gap-2 p-2 cursor-pointer hover:bg-nf-bg-hover transition duration-fast border-b border-nf-border-light"
+          className="group flex items-center gap-2 p-2 cursor-pointer hover:bg-nf-bg-hover transition duration-fast border-b border-nf-border-light"
           onClick={() => hasChildren && setExpanded(!expanded)}
         >
           {hasChildren ? (
@@ -197,6 +209,18 @@ function TreeNodeGrid({
           <span className="text-[10px] text-nf-text-tertiary ml-auto">
             {node.children?.length || 0}
           </span>
+          <button
+            onClick={(e) => onRename(node, e)}
+            className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto p-1 text-nf-text-tertiary hover:text-fandex-primary transition duration-fast"
+          >
+            <PenLine className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => onDelete(node, e)}
+            className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto p-1 text-nf-text-tertiary hover:text-red-400 transition duration-fast"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
         {expanded && (
           <div className="grid grid-cols-2 gap-1 bg-nf-border-light border border-nf-border-light pl-2">
@@ -318,8 +342,10 @@ export default function FileList({ onCreateFile }: FileListProps) {
     }
     const { currentProject } = useAppStore.getState();
     if (!currentProject) return;
-    // 确保 .txt 扩展名
-    const ensuredName = newName.endsWith(".txt") ? newName : `${newName}.txt`;
+    // 文件确保 .txt 扩展名，目录不添加扩展名
+    const ensuredName = node.is_dir
+      ? newName
+      : (newName.endsWith(".txt") ? newName : `${newName}.txt`);
     const dirPath = node.relative_path.substring(
       0,
       node.relative_path.lastIndexOf("/") + 1
@@ -423,7 +449,7 @@ export default function FileList({ onCreateFile }: FileListProps) {
       <ConfirmDialog
         open={!!deleteTarget}
         type="danger"
-        title={t("filelist.confirmDelete", { name: deleteTarget?.name || "" })}
+        title={t("app.delete")}
         message={t("filelist.confirmDelete", { name: deleteTarget?.name || "" })}
         confirmLabel={t("app.delete")}
         onConfirm={handleDeleteConfirm}
@@ -433,7 +459,7 @@ export default function FileList({ onCreateFile }: FileListProps) {
       <ConfirmDialog
         open={!!renameTarget}
         type="prompt"
-        title={t("filelist.renamePrompt")}
+        title={t("app.rename")}
         message={t("filelist.renamePrompt")}
         defaultValue={renameTarget?.name || ""}
         onConfirm={handleRenameConfirm}

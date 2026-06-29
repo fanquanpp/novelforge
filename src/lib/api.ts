@@ -135,6 +135,15 @@ export async function importProject(projectPath: string): Promise<ProjectInfo> {
   return invoke<ProjectInfo>("import_project", { projectPath });
 }
 
+// 删除项目（永久删除项目目录）
+// 输入: projectPath 项目根目录路径
+// 输出: Promise<void>
+// 流程: 调用 Rust 后端 delete_project 命令（后端校验为有效项目后删除）
+// 注意: 调用前应在 UI 层显示确认对话框
+export async function deleteProject(projectPath: string): Promise<void> {
+  return invoke<void>("delete_project", { projectPath });
+}
+
 // 打开目录选择对话框
 // 输入: 无
 // 输出: Promise<string | null> 选中目录路径

@@ -79,7 +79,7 @@ export default function CommandPalette({
   // 新建文件命令（按分类动态生成）
   const createFileCommands: Command[] = useMemo(() => {
     if (!onCreateFile) return [];
-    const categories: SidebarCategory[] = ["manuscript", "outline", "characters", "worldview", "glossary", "materials"];
+    const categories: SidebarCategory[] = ["manuscript", "outline", "characters", "worldview", "glossary", "materials", "timeline"];
     return categories.map((cat) => ({
       id: `new-file-${cat}`,
       label: t("command.newFile", { category: CATEGORY_NAMES[cat] }),
@@ -124,6 +124,7 @@ export default function CommandPalette({
         e.preventDefault();
         if (filtered[selectedIndex]) {
           filtered[selectedIndex].action();
+          onClose();
         }
       } else if (e.key === "Escape") {
         onClose();
@@ -173,7 +174,7 @@ export default function CommandPalette({
             filtered.map((cmd, idx) => (
               <button
                 key={cmd.id}
-                onClick={() => cmd.action()}
+                onClick={() => { cmd.action(); onClose(); }}
                 onMouseEnter={() => setSelectedIndex(idx)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition duration-fast ${
                   idx === selectedIndex

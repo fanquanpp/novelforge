@@ -32,6 +32,7 @@ pub fn run() {
             fs_commands::scan_projects,
             fs_commands::import_project,
             fs_commands::pick_directory,
+            fs_commands::delete_project,
             // 文件操作命令
             fs_commands::read_project_tree,
             fs_commands::read_file,

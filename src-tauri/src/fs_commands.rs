@@ -582,6 +582,28 @@ pub fn rename_path(
     fs::rename(&old_abs, &new_abs).map_err(|e| format!("重命名失败: {}", e))
 }
 
+/// 删除项目（永久删除项目目录及其所有内容）
+/// 输入: project_path 项目根目录路径
+/// 输出: Result<(), String> 成功或错误
+/// 流程: 校验路径存在且为目录，递归删除整个项目目录
+/// 注意: 前端在调用前应显示确认对话框，此操作不可逆
+#[tauri::command]
+pub fn delete_project(project_path: String) -> Result<(), String> {
+    let path = PathBuf::from(&project_path);
+    if !path.exists() {
+        return Err("项目路径不存在".to_string());
+    }
+    if !path.is_dir() {
+        return Err("路径不是目录".to_string());
+    }
+    // 验证是有效的 NovelForge 项目（防止误删非项目目录）
+    let meta_path = path.join(".novelforge").join("project.json");
+    if !meta_path.exists() {
+        return Err("不是有效的 NovelForge 项目（缺少元数据文件）".to_string());
+    }
+    fs::remove_dir_all(&path).map_err(|e| format!("删除项目失败: {}", e))
+}
+
 /// 搜索结果项结构
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SearchResult {

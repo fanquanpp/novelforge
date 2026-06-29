@@ -2,14 +2,15 @@
 //
 // 功能概述：
 // NovelForge 的入口页面，支持创建新项目、导入已有项目、
-// 扫描目录下的项目列表、搜索过滤和最近创作项目展示。
+// 扫描目录下的项目列表、搜索过滤、删除项目。
 // 采用 FANDEX 直角美学与品牌色。
 //
 // 模块职责：
 // 1. 项目扫描与导入
-// 2. 最近项目列表展示
+// 2. 最近项目列表展示（支持全部项目，不限数量）
 // 3. 搜索过滤
 // 4. 启动创建项目对话框
+// 5. 删除项目（带确认对话框）
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -29,6 +30,7 @@ import {
   scanProjects,
   importProject,
   pickDirectory,
+  deleteProject,
   type ProjectInfo,
 } from "../lib/api";
 import ProjectCard, { type ProjectData } from "./ProjectCard";
@@ -36,6 +38,7 @@ import CreateProjectDialog from "./CreateProjectDialog";
 import { ProjectGridSkeleton } from "./SkeletonComponents";
 import { useI18n } from "../lib/i18n";
 import { useToast } from "../lib/toast";
+import ConfirmDialog from "./ConfirmDialog";
 
 const SCAN_DIR_KEY = "novelforge:scanDir:v1";
 
@@ -50,6 +53,7 @@ export default function Launcher() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [appVersion, setAppVersion] = useState("1.4.0"); // 默认值
+  const [deleteTarget, setDeleteTarget] = useState<ProjectInfo | null>(null);
 
   const handleScan = useCallback(async () => {
     if (!scanDir) return;
@@ -149,10 +153,11 @@ export default function Launcher() {
     );
   }, [projects, searchQuery]);
 
-  const recentProjects = useMemo(() => {
-    return [...filteredProjects]
-      .sort((a, b) => b.meta.updated_at.localeCompare(a.meta.updated_at))
-      .slice(0, 9);
+  // 显示全部项目（按更新时间排序），不再限制为前 9 个
+  const sortedProjects = useMemo(() => {
+    return [...filteredProjects].sort((a, b) =>
+      b.meta.updated_at.localeCompare(a.meta.updated_at)
+    );
   }, [filteredProjects]);
 
   const formatWordCount = useCallback((n: number) => {
@@ -261,8 +266,26 @@ export default function Launcher() {
     }
   }, [openProject, t, showToast]);
 
+  // 删除项目处理
+  const handleDeleteProject = useCallback((project: ProjectInfo) => {
+    setDeleteTarget(project);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    const project = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await deleteProject(project.path);
+      setProjects((prev) => prev.filter((p) => p.path !== project.path));
+      showToast("success", t("project.deleteSuccess", { name: project.meta.name }));
+    } catch (e) {
+      showToast("error", t("project.deleteFailed", { error: String(e) }));
+    }
+  }, [deleteTarget, t, showToast]);
+
   const hasProjects = projects.length > 0;
-  const hasSearchResults = recentProjects.length > 0;
+  const hasSearchResults = sortedProjects.length > 0;
   const isSearching = searchQuery.trim().length > 0;
 
   return (
@@ -403,14 +426,15 @@ export default function Launcher() {
           ) : (
             <section className="mb-10">
               <h3 className="fandex-bar-left text-sm font-semibold font-display text-nf-text mb-4">
-                {t("launcher.recentProjectsCount", { count: recentProjects.length })}
+                {t("launcher.recentProjectsCount", { count: sortedProjects.length })}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {recentProjects.map((p) => (
+                {sortedProjects.map((p) => (
                   <ProjectCard
                     key={p.path}
                     project={toProjectData(p)}
                     projectInfo={p}
+                    onDelete={handleDeleteProject}
                   />
                 ))}
               </div>
@@ -425,6 +449,17 @@ export default function Launcher() {
           onSuccess={handleCreateSuccess}
         />
       )}
+
+      {/* 项目删除确认对话框 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        type="danger"
+        title={t("project.deleteConfirmTitle")}
+        message={t("project.deleteConfirmMsg", { name: deleteTarget?.meta.name || "" })}
+        confirmLabel={t("app.delete")}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
