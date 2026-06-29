@@ -11,7 +11,7 @@
 // 4. 高亮当前选中分类
 // 5. 触发分类切换
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   Users,
   Globe,
@@ -26,20 +26,15 @@ import {
   Moon,
   BarChart3,
   Search,
-  Clock,
   Layers,
 } from "lucide-react";
 import {
   useAppStore,
   CATEGORY_NAMES,
-  CATEGORY_DIRS,
   getCategoryName,
-  getCategoryDir,
   type SidebarCategory,
 } from "../lib/store";
 import { useThemeStore } from "../lib/themeStore";
-import { getRecentFiles, type RecentFile } from "../lib/recentFiles";
-import { findFileByPath } from "../lib/fileTreeUtils";
 import { getTypeSpecificDirs } from "../lib/templateRegistry";
 import { useI18n } from "../lib/i18n";
 import { useAutoSaveOnExit } from "../hooks/useAutoSaveOnExit";
@@ -85,32 +80,18 @@ interface SidebarProps {
 //   3. 底部显示主题切换与新建文件按钮
 export default function Sidebar({ onCreateFile }: SidebarProps) {
   const currentProject = useAppStore((s) => s.currentProject);
-  const projectTree = useAppStore((s) => s.projectTree);
   const activeCategory = useAppStore((s) => s.activeCategory);
-  const selectedFile = useAppStore((s) => s.selectedFile);
   const setActiveCategory = useAppStore((s) => s.setActiveCategory);
-  const setSelectedFile = useAppStore((s) => s.setSelectedFile);
   const closeProject = useAppStore((s) => s.closeProject);
   const { theme, toggleTheme } = useThemeStore();
   const { t } = useI18n();
   const { handleBackToLauncher } = useAutoSaveOnExit();
-  const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
 
   // 根据项目类型获取专属目录列表
   const typeSpecificDirs = useMemo(() => {
     if (!currentProject) return [];
     return getTypeSpecificDirs(currentProject.meta.type);
   }, [currentProject]);
-
-  // 加载最近文件（仅显示当前项目的，文件切换时也刷新排序）
-  useEffect(() => {
-    if (!currentProject) return;
-    const all = getRecentFiles();
-    const projectFiles = all.filter(
-      (f) => f.project_path === currentProject.path
-    );
-    setRecentFiles(projectFiles.slice(0, 5));
-  }, [currentProject, selectedFile]);
 
   return (
     <div className="w-40 min-w-[150px] border-r border-nf-border-light bg-nf-bg-sidebar flex flex-col">
@@ -184,56 +165,6 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
                   )}
                   <Layers className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{dirName}</span>
-                </button>
-              );
-            })}
-          </>
-        )}
-
-        {/* 最近文件（仅当前项目） */}
-        {recentFiles.length > 0 && (
-          <>
-            <div className="px-3 py-1 mt-3 text-[10px] font-semibold text-nf-text-tertiary uppercase tracking-wider flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {t("sidebar.recentSection")}
-            </div>
-            {recentFiles.map((rf) => {
-              const isActive = selectedFile?.relative_path === rf.relative_path;
-              return (
-                <button
-                  key={rf.relative_path}
-                  title={rf.name}
-                  onClick={() => {
-                    const node = findFileByPath(projectTree, rf.relative_path);
-                    if (!node) return;
-                    // 自动切换到文件所属分类
-                    const topDir = rf.relative_path.split(/[\\/]/)[0] || "";
-                    // 先检查固定分类
-                    let matched = false;
-                    for (const [cat, dir] of Object.entries(CATEGORY_DIRS)) {
-                      if (dir === topDir) {
-                        setActiveCategory(cat as SidebarCategory);
-                        matched = true;
-                        break;
-                      }
-                    }
-                    // 固定分类未匹配，检查是否为类型专属目录
-                    if (!matched && typeSpecificDirs.includes(topDir)) {
-                      setActiveCategory(topDir as SidebarCategory);
-                    }
-                    setSelectedFile(node);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] transition duration-fast truncate relative ${
-                    isActive
-                      ? "bg-fandex-primary/10 text-fandex-primary"
-                      : "text-nf-text-tertiary hover:text-nf-text hover:bg-nf-bg-hover"
-                  }`}
-                >
-                  {isActive && (
-                    <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-fandex-primary"></span>
-                  )}
-                  <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="truncate">{rf.name}</span>
                 </button>
               );
             })}

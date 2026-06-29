@@ -121,6 +121,21 @@ function ToastItemComponent({
     };
   }, [toast.id, toast.duration, onRemove]);
 
+  // Success toasts use a compact mini pill style (less intrusive for auto-save etc.)
+  const isMini = toast.type === "success";
+
+  if (isMini) {
+    return (
+      <div
+        className={`pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 border ${COLOR_MAP[toast.type]} ${BG_MAP[toast.type]} bg-nf-bg-card/80 backdrop-blur-sm shadow-sm transition-all animate-slide-in-right text-xs`}
+        role="status"
+      >
+        <Icon className="w-3 h-3 flex-shrink-0" />
+        <span className="text-nf-text-secondary leading-tight">{toast.message}</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`pointer-events-auto flex items-start gap-2.5 px-4 py-3 border ${COLOR_MAP[toast.type]} ${BG_MAP[toast.type]} bg-nf-bg-card shadow-lg transition-all animate-slide-in-right`}

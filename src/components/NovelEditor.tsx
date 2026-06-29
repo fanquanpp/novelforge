@@ -273,17 +273,35 @@ export default function NovelEditor({
     }
   }, [editor, filePath, showToast, t]);
 
-  // Ctrl+S 快捷键
+  // Ctrl+S 快捷键 & Ctrl+Q 快速加引号
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
       }
+      // Ctrl+Q 快速加引号「」
+      if ((e.ctrlKey || e.metaKey) && (e.key === "q" || e.key === "Q")) {
+        e.preventDefault();
+        if (!editor) return;
+        const { from, to } = editor.state.selection;
+        const selectedText = editor.state.doc.textBetween(from, to, "\n");
+        if (selectedText) {
+          editor.chain().focus()
+            .deleteSelection()
+            .insertContent(`「${selectedText}」`)
+            .run();
+        } else {
+          editor.chain().focus()
+            .insertContent("「」")
+            .setTextSelection(from + 1)
+            .run();
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSave]);
+  }, [handleSave, editor]);
 
   // 自动保存: 30 秒（竞态保护：不在手动保存时触发）
   useEffect(() => {

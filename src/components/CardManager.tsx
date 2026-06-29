@@ -122,15 +122,31 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
     setShowCreatePrompt(true);
   };
 
-  // 确认新建卡片
+  // 确认新建卡片（根据分类生成模板内容）
   const handleCreateConfirm = async (name?: string) => {
     setShowCreatePrompt(false);
     if (!name?.trim() || !currentProject) return;
     try {
       const dirName = getCategoryDir(activeCategory);
-      await createFile(currentProject.path, `${dirName}/${name.trim()}.txt`, `${name.trim()}\n\n`);
+      const cardName = name.trim();
+      // 根据分类生成模板内容
+      let templateContent = "";
+      switch (activeCategory) {
+        case "characters":
+          templateContent = `${cardName}\n\n【外貌】\n\n【性格】\n\n【背景】\n\n【动机】\n\n【关系】\n\n【备注】\n\n`;
+          break;
+        case "worldview":
+          templateContent = `${cardName}\n\n【概述】\n\n【地理】\n\n【历史】\n\n【文化】\n\n【规则】\n\n【关联设定】\n\n`;
+          break;
+        case "glossary":
+          templateContent = `${cardName}\n\n【定义】\n\n【来源】\n\n【相关】\n\n`;
+          break;
+        default:
+          templateContent = `${cardName}\n\n`;
+      }
+      await createFile(currentProject.path, `${dirName}/${cardName}.txt`, templateContent);
       await loadCards();
-      showToast("success", t("cardmanager.created", { name: name.trim() }));
+      showToast("success", t("cardmanager.created", { name: cardName }));
     } catch (e) {
       showToast("error", t("cardmanager.createFailed", { error: String(e) }));
     }

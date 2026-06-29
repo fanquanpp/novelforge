@@ -123,12 +123,31 @@ export default function Workspace() {
       ? `${currentProject.path}/${selectedFile.relative_path}`
       : null;
 
+  // 根据分类生成文件初始内容
+  const getFileTemplate = useCallback(
+    (fileName: string, category: SidebarCategory): string => {
+      const title = fileName.replace(/\.txt$/i, "").trim();
+      switch (category) {
+        case "manuscript":
+          return `${title}\n\n`;
+        case "outline":
+          return `${title}\n\n一、\n二、\n三、\n四、\n五、\n\n`;
+        case "materials":
+          return `${title}\n\n`;
+        default:
+          return `${title}\n\n`;
+      }
+    },
+    []
+  );
+
   // 处理新建文件确认
   const handleCreateFile = async (fileName: string) => {
     if (!currentProject) throw new Error("无当前项目");
     const dirName = getCategoryDir(activeCategory);
     const relativePath = `${dirName}/${fileName}`;
-    await createFile(currentProject.path, relativePath, "");
+    const templateContent = getFileTemplate(fileName, activeCategory);
+    await createFile(currentProject.path, relativePath, templateContent);
     const tree = await readProjectTree(currentProject.path);
     setProjectTree(tree);
     showToast("success", t("workspace.fileCreated", { name: fileName }));

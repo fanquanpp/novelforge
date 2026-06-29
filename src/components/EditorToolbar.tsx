@@ -22,6 +22,7 @@ import {
   Download,
   Music,
   Pilcrow,
+  Quote,
 } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 
@@ -93,6 +94,24 @@ export default function EditorToolbar({
     document.querySelector(".ProseMirror")?.dispatchEvent(event);
   };
 
+  // 快速加引号：用「」包裹选中文本，无选中则在引号间放置光标
+  const handleQuickQuote = () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, "\n");
+    if (selectedText) {
+      editor.chain().focus()
+        .deleteSelection()
+        .insertContent(`「${selectedText}」`)
+        .run();
+    } else {
+      editor.chain().focus()
+        .insertContent("「」")
+        .setTextSelection(from + 1)
+        .run();
+    }
+  };
+
   return (
     <div className="fandex-nav-blur flex items-center gap-1 px-4 py-2 border-b border-nf-border-light">
       {/* 聚焦模式下隐藏格式化按钮，仅保留状态和保存 */}
@@ -111,6 +130,13 @@ export default function EditorToolbar({
             title={t("editor.italic")}
           >
             <Italic className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={handleQuickQuote}
+            active={false}
+            title={t("editor.quickQuote")}
+          >
+            <Quote className="w-4 h-4" />
           </ToolbarButton>
           <Divider />
           <ToolbarButton
