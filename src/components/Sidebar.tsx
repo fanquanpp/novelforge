@@ -30,8 +30,6 @@ import {
 } from "lucide-react";
 import {
   useAppStore,
-  CATEGORY_NAMES,
-  getCategoryName,
   type SidebarCategory,
 } from "../lib/store";
 import { useThemeStore } from "../lib/themeStore";
@@ -133,7 +131,7 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              title={CATEGORY_NAMES[cat]}
+              title={t(`sidebar.${cat}`)}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-all duration-base ease-fandex relative group ${
                 isActive
                   ? "bg-fandex-primary/10 text-fandex-primary"
@@ -147,7 +145,7 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
               <Icon className={`w-4 h-4 flex-shrink-0 transition-transform duration-fast ${
                 isActive ? 'scale-110' : 'group-hover:scale-105'
               }`} />
-              <span className="truncate">{CATEGORY_NAMES[cat]}</span>
+              <span className="truncate">{t(`sidebar.${cat}`)}</span>
             </button>
           );
         })}
@@ -201,7 +199,7 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              title={CATEGORY_NAMES[cat]}
+              title={t(`sidebar.${cat}`)}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-all duration-base ease-fandex relative group ${
                 isActive
                   ? "bg-fandex-tertiary/10 text-fandex-tertiary"
@@ -215,7 +213,7 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
               <Icon className={`w-4 h-4 flex-shrink-0 transition-transform duration-fast ${
                 isActive ? 'scale-110' : 'group-hover:scale-105'
               }`} />
-              <span className="truncate">{CATEGORY_NAMES[cat]}</span>
+              <span className="truncate">{t(`sidebar.${cat}`)}</span>
             </button>
           );
         })}

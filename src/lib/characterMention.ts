@@ -20,6 +20,13 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 export interface CharacterMentionOptions {
   characters: string[];
   onSelect: (name: string) => void;
+  labels?: {
+    pickerAriaLabel?: string;
+    listboxAriaLabel?: string;
+    customInputAriaLabel?: string;
+    customInputPlaceholder?: string;
+    hintText?: string;
+  };
 }
 
 export const CharacterMention = Extension.create<CharacterMentionOptions>({
@@ -29,6 +36,7 @@ export const CharacterMention = Extension.create<CharacterMentionOptions>({
     return {
       characters: [],
       onSelect: () => {},
+      labels: {},
     };
   },
 
@@ -71,7 +79,7 @@ export const CharacterMention = Extension.create<CharacterMentionOptions>({
                   const tr = view.state.tr.insertText(`${name}: `, selection.from);
                   view.dispatch(tr);
                   options.onSelect(name);
-                });
+                }, options.labels || {});
                 event.preventDefault();
                 return true;
               }
@@ -118,15 +126,28 @@ function setSelectedItem(picker: HTMLElement, items: HTMLElement[], newIndex: nu
 function showCharacterPicker(
   rect: DOMRect,
   characters: string[],
-  callback: (name: string) => void
+  callback: (name: string) => void,
+  labels: {
+    pickerAriaLabel?: string;
+    listboxAriaLabel?: string;
+    customInputAriaLabel?: string;
+    customInputPlaceholder?: string;
+    hintText?: string;
+  } = {}
 ) {
   const existing = document.getElementById("character-picker");
   if (existing) existing.remove();
 
+  const pickerAria = labels.pickerAriaLabel || "角色名选择";
+  const listboxAria = labels.listboxAriaLabel || "可选角色名";
+  const inputAria = labels.customInputAriaLabel || "自定义角色名输入";
+  const inputPlaceholder = labels.customInputPlaceholder || "自定义角色名…";
+  const hintLabel = labels.hintText || "Tab 选择 | ↑↓ 导航 | Esc 关闭";
+
   const picker = document.createElement("div");
   picker.id = "character-picker";
   picker.setAttribute("role", "dialog");
-  picker.setAttribute("aria-label", "角色名选择");
+  picker.setAttribute("aria-label", pickerAria);
   picker.style.cssText = `
     position: fixed;
     left: ${rect.left}px;
@@ -146,7 +167,7 @@ function showCharacterPicker(
   // 角色列表容器
   const listbox = document.createElement("div");
   listbox.setAttribute("role", "listbox");
-  listbox.setAttribute("aria-label", "可选角色名");
+  listbox.setAttribute("aria-label", listboxAria);
   picker.appendChild(listbox);
 
   characters.forEach((name, i) => {
@@ -190,8 +211,8 @@ function showCharacterPicker(
   // 自定义输入框
   const customInput = document.createElement("input");
   customInput.type = "text";
-  customInput.placeholder = "自定义角色名...";
-  customInput.setAttribute("aria-label", "自定义角色名输入");
+  customInput.placeholder = inputPlaceholder;
+  customInput.setAttribute("aria-label", inputAria);
   customInput.style.cssText = `
     width: 100%;
     box-sizing: border-box;
@@ -260,7 +281,7 @@ function showCharacterPicker(
 
   // 底部提示
   const hint = document.createElement("div");
-  hint.textContent = "Tab 选择 | ↑↓ 导航 | Esc 关闭";
+  hint.textContent = hintLabel;
   hint.setAttribute("aria-hidden", "true");
   hint.style.cssText = `padding: 4px 12px; font-size: 11px; color: var(--fandex-text-tertiary, #8a8a8a);`;
   picker.appendChild(hint);

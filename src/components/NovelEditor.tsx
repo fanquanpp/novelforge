@@ -106,6 +106,13 @@ export default function NovelEditor({
         CharacterMention.configure({
           characters,
           onSelect: () => {},
+          labels: {
+            pickerAriaLabel: t("editor.charRosterHint", { count: characters.length }),
+            listboxAriaLabel: t("editor.charRosterHint", { count: characters.length }),
+            customInputAriaLabel: t("characterMention.placeholder"),
+            customInputPlaceholder: t("characterMention.placeholder"),
+            hintText: "Tab ↵ | ↑↓ | Esc",
+          },
         })
       );
     }

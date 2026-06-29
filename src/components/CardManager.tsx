@@ -130,17 +130,17 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
     try {
       const dirName = getCategoryDir(activeCategory);
       const cardName = name.trim();
-      // 根据分类生成模板内容
+      // 根据分类生成模板内容（使用 i18n 文案）
       let templateContent = "";
       switch (activeCategory) {
         case "characters":
-          templateContent = `${cardName}\n\n【外貌】\n\n【性格】\n\n【背景】\n\n【动机】\n\n【关系】\n\n【备注】\n\n`;
+          templateContent = `${cardName}\n\n${t("card.characterAppearance")}\n${t("card.characterPersonality")}\n${t("card.characterBackground")}\n${t("card.characterMotivation")}\n${t("card.characterRelationships")}\n${t("card.characterSpeech")}\n`;
           break;
         case "worldview":
-          templateContent = `${cardName}\n\n【概述】\n\n【地理】\n\n【历史】\n\n【文化】\n\n【规则】\n\n【关联设定】\n\n`;
+          templateContent = `${cardName}\n\n${t("card.worldGeography")}\n${t("card.worldHistory")}\n${t("card.worldCulture")}\n${t("card.worldMagicSystem")}\n${t("card.worldFactions")}\n`;
           break;
         case "glossary":
-          templateContent = `${cardName}\n\n【定义】\n\n【来源】\n\n【相关】\n\n`;
+          templateContent = `${cardName}\n\n${t("card.glossaryDefinition")}\n${t("card.glossaryUsage")}\n${t("card.glossaryRelated")}\n`;
           break;
         default:
           templateContent = `${cardName}\n\n`;
