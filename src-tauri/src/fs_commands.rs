@@ -523,18 +523,14 @@ pub fn create_file(
     Ok(validated.to_string_lossy().to_string())
 }
 
-/// 删除文件或目录（含路径沙箱校验）
+/// 删除文件或目录（含路径沙箱校验，移至回收站）
 /// 输入: path 路径, project_path 项目根目录
 /// 输出: Result<(), String> 成功或错误
-/// 流程: 校验路径后删除文件或递归删除目录
+/// 流程: 校验路径后移至系统回收站
 #[tauri::command]
 pub fn delete_path(path: String, project_path: String) -> Result<(), String> {
     let p = validate_path_in_project(&path, &project_path)?;
-    if p.is_dir() {
-        fs::remove_dir_all(&p).map_err(|e| format!("删除目录失败: {}", e))
-    } else {
-        fs::remove_file(&p).map_err(|e| format!("删除文件失败: {}", e))
-    }
+    trash::delete(&p).map_err(|e| format!("删除失败: {}", e))
 }
 
 /// 重命名文件或目录（含路径沙箱校验）
@@ -569,11 +565,11 @@ pub fn rename_path(
     fs::rename(&old_abs, &new_abs).map_err(|e| format!("重命名失败: {}", e))
 }
 
-/// 删除项目（永久删除项目目录及其所有内容）
+/// 删除项目（移至系统回收站）
 /// 输入: project_path 项目根目录路径
 /// 输出: Result<(), String> 成功或错误
-/// 流程: 校验路径存在且为目录，递归删除整个项目目录
-/// 注意: 前端在调用前应显示确认对话框，此操作不可逆
+/// 流程: 校验路径存在且为有效项目，移至系统回收站
+/// 注意: 前端在调用前应显示确认对话框
 #[tauri::command]
 pub fn delete_project(project_path: String) -> Result<(), String> {
     let path = PathBuf::from(&project_path);
@@ -588,7 +584,7 @@ pub fn delete_project(project_path: String) -> Result<(), String> {
     if !meta_path.exists() {
         return Err("不是有效的 NovelForge 项目（缺少元数据文件）".to_string());
     }
-    fs::remove_dir_all(&path).map_err(|e| format!("删除项目失败: {}", e))
+    trash::delete(&path).map_err(|e| format!("删除项目失败: {}", e))
 }
 
 /// 搜索结果项结构

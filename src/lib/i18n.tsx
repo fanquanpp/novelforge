@@ -129,7 +129,7 @@ const zhCN: TranslationDict = {
   "project.genreOptional": "（可选）",
   "project.genreNone": "不指定",
   "project.deleteConfirmTitle": "删除项目",
-  "project.deleteConfirmMsg": "确定要永久删除项目「{name}」吗？\n\n此操作不可恢复，项目目录及其所有文件将被删除。",
+  "project.deleteConfirmMsg": "确定要删除项目「{name}」吗？\n\n项目将被移至回收站，你可以从回收站中恢复。",
   "project.deleteSuccess": "项目「{name}」已删除",
   "project.deleteFailed": "删除项目失败：{error}",
 
@@ -539,7 +539,7 @@ const enUS: TranslationDict = {
   "project.genreOptional": "(optional)",
   "project.genreNone": "Not specified",
   "project.deleteConfirmTitle": "Delete Project",
-  "project.deleteConfirmMsg": "Are you sure you want to permanently delete \"{name}\"?\n\nThis cannot be undone. The project folder and all its files will be removed.",
+  "project.deleteConfirmMsg": "Are you sure you want to delete \"{name}\"?\n\nThe project will be moved to the Recycle Bin and can be restored from there.",
   "project.deleteSuccess": "Project \"{name}\" deleted",
   "project.deleteFailed": "Failed to delete project: {error}",
 
