@@ -232,6 +232,12 @@ export default function Launcher() {
               placeholder="搜索项目名称..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearchQuery("");
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
               className="w-full bg-nf-bg-card border border-nf-border-light pl-10 pr-4 py-2 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none focus:border-fandex-primary transition-fast"
             />
           </div>

@@ -1,0 +1,130 @@
+// Toast 通知系统
+//
+// 功能概述：
+// 提供统一的全局 Toast 通知，支持成功、错误、警告、信息四种类型。
+// 自动堆叠多条消息，支持手动关闭和自动消失。
+//
+// 模块职责：
+// 1. ToastProvider: 全局 Toast 容器
+// 2. useToast: 触发 Toast 的 Hook
+// 3. Toast 组件: 单条 Toast 渲染
+
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
+
+export type ToastType = "success" | "error" | "warning" | "info";
+
+interface ToastItem {
+  id: number;
+  type: ToastType;
+  message: string;
+  duration: number;
+}
+
+interface ToastContextValue {
+  showToast: (type: ToastType, message: string, duration?: number) => void;
+}
+
+const ToastContext = createContext<ToastContextValue>({
+  showToast: () => {},
+});
+
+let nextId = 0;
+
+const ICON_MAP: Record<ToastType, React.ComponentType<{ className?: string }>> = {
+  success: CheckCircle,
+  error: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
+};
+
+const COLOR_MAP: Record<ToastType, string> = {
+  success: "border-fandex-secondary text-fandex-secondary",
+  error: "border-red-400 text-red-400",
+  warning: "border-fandex-tertiary text-fandex-tertiary",
+  info: "border-fandex-primary text-fandex-primary",
+};
+
+const BG_MAP: Record<ToastType, string> = {
+  success: "bg-fandex-secondary/10",
+  error: "bg-red-400/10",
+  warning: "bg-fandex-tertiary/10",
+  info: "bg-fandex-primary/10",
+};
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const showToast = useCallback(
+    (type: ToastType, message: string, duration = 3000) => {
+      const id = nextId++;
+      setToasts((prev) => [...prev, { id, type, message, duration }]);
+    },
+    []
+  );
+
+  const removeToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      {/* Toast 容器 - 固定右下角 */}
+      <div
+        className="fixed bottom-4 right-4 z-[100] flex flex-col-reverse gap-2 max-w-sm w-full pointer-events-none"
+        role="region"
+        aria-label="通知"
+      >
+        {toasts.map((toast) => (
+          <ToastItemComponent
+            key={toast.id}
+            toast={toast}
+            onRemove={removeToast}
+          />
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+function ToastItemComponent({
+  toast,
+  onRemove,
+}: {
+  toast: ToastItem;
+  onRemove: (id: number) => void;
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const Icon = ICON_MAP[toast.type];
+
+  useEffect(() => {
+    timerRef.current = setTimeout(() => {
+      onRemove(toast.id);
+    }, toast.duration);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [toast.id, toast.duration, onRemove]);
+
+  return (
+    <div
+      className={`pointer-events-auto flex items-start gap-2.5 px-4 py-3 border ${COLOR_MAP[toast.type]} ${BG_MAP[toast.type]} bg-nf-bg-card shadow-lg transition-all animate-slide-in-right`}
+      role="alert"
+    >
+      <Icon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+      <span className="flex-1 text-sm text-nf-text leading-relaxed">{toast.message}</span>
+      <button
+        onClick={() => onRemove(toast.id)}
+        className="flex-shrink-0 text-nf-text-tertiary hover:text-nf-text transition-fast"
+        aria-label="关闭通知"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+export function useToast(): ToastContextValue {
+  return useContext(ToastContext);
+}

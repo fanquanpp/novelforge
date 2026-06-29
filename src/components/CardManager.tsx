@@ -11,10 +11,15 @@
 // 4. 编辑模式下支持保存与返回
 
 import { useState, useEffect, useCallback } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import type { Extensions } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 import { Plus, Trash2, ChevronLeft, Save, FileText } from "lucide-react";
 import { useAppStore, CATEGORY_DIRS } from "../lib/store";
 import { readProjectTree, createFile, deletePath, readFile, writeFile } from "../lib/api";
 import type { FileNode } from "../lib/api";
+import { findDirByName } from "../lib/fileTreeUtils";
 
 // 卡片管理属性接口
 interface CardManagerProps {
@@ -46,6 +51,32 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
   const [editContent, setEditContent] = useState("");
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // TipTap 编辑器实例（卡片编辑模式）
+  const cardEditor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      Placeholder.configure({ placeholder: "开始编辑卡片内容..." }),
+    ],
+    content: "",
+    onUpdate: () => setDirty(true),
+  });
+
+  // 退出编辑时重置
+  useEffect(() => {
+    if (!editingCard) {
+      setDirty(false);
+      setEditContent("");
+    }
+  }, [editingCard]);
+
+  // 编辑器就绪后同步内容（避免 setTimeout 竞态）
+  useEffect(() => {
+    if (editingCard && cardEditor && editContent) {
+      cardEditor.commands.setContent(simpleMdToHtml(editContent));
+    }
+  }, [editingCard, !!cardEditor]);
 
   // 加载卡片列表
   // 输入: 无
@@ -58,17 +89,7 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
       const tree = await readProjectTree(currentProject.path);
       const dirName = CATEGORY_DIRS[activeCategory];
       // 查找当前分类目录
-      const findDir = (nodes: FileNode[]): FileNode | null => {
-        for (const n of nodes) {
-          if (n.name === dirName && n.is_dir) return n;
-          if (n.is_dir && n.children.length > 0) {
-            const found = findDir(n.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const dir = findDir(tree);
+      const dir = findDirByName(tree, dirName);
       const files = dir?.children.filter((f) => !f.is_dir) || [];
 
       // 加载每个文件的预览
@@ -137,10 +158,9 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
     }
   };
 
-  // 打开卡片编辑
+  // 打开卡片编辑 — 加载内容到 TipTap 编辑器
   // 输入: card 卡片项
   // 输出: 无
-  // 流程: 加载文件内容并进入编辑模式
   const handleOpenCard = async (card: CardItem) => {
     if (!currentProject) return;
     try {
@@ -155,21 +175,24 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
     }
   };
 
-  // 保存卡片
+  // 保存卡片 — 将 TipTap HTML 转为 Markdown 写入文件
   // 输入: 无
   // 输出: 无
-  // 流程: 将编辑内容写入文件
   const handleSave = async () => {
-    if (!currentProject || !editingCard) return;
+    if (!currentProject || !editingCard || !cardEditor || saving) return;
+    setSaving(true);
     try {
+      const md = simpleHtmlToMd(cardEditor.getHTML());
       await writeFile(
         `${currentProject.path}\\${editingCard.node.relative_path}`,
-        editContent
+        md
       );
       setDirty(false);
       await loadCards();
     } catch (e) {
       alert(`保存失败: ${e}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -194,25 +217,20 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
             {dirty && <span className="text-xs text-fandex-tertiary">未保存</span>}
             <button
               onClick={handleSave}
-              disabled={!dirty}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse transition-fast disabled:opacity-30"
+              disabled={!dirty || saving}
+              className="flex items-center gap-1 px-3 py-1 text-sm bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse transition-fast disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Save className="w-3.5 h-3.5" />
-              保存
+              {saving ? "保存中..." : "保存"}
             </button>
           </div>
         </div>
 
-        {/* 编辑区 */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <textarea
-            value={editContent}
-            onChange={(e) => {
-              setEditContent(e.target.value);
-              setDirty(true);
-            }}
-            className="w-full h-full bg-transparent text-nf-text text-base leading-loose resize-none focus:outline-none font-sans"
-            placeholder="开始编辑内容..."
+        {/* TipTap 富文本编辑区 */}
+        <div className="flex-1 overflow-y-auto">
+          <EditorContent
+            editor={cardEditor}
+            className="prose prose-invert max-w-none min-h-full px-8 py-6 leading-loose"
           />
         </div>
       </div>
@@ -252,8 +270,16 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
             {cards.map((card) => (
               <div
                 key={card.node.relative_path}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleOpenCard(card)}
-                className="group relative bg-nf-bg hover:bg-nf-bg-hover p-4 cursor-pointer transition-fast"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleOpenCard(card);
+                  }
+                }}
+                className="group relative bg-nf-bg hover:bg-nf-bg-hover p-4 cursor-pointer transition-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-fandex-primary focus-visible:outline-offset-[-2px]"
               >
                 {/* 删除按钮 */}
                 <button
@@ -279,4 +305,46 @@ export default function CardManager({ categoryLabel }: CardManagerProps) {
       </div>
     </div>
   );
+}
+
+// 简易 Markdown → HTML（供卡片的 TipTap 编辑器使用）
+function simpleMdToHtml(md: string): string {
+  if (!md) return "<p></p>";
+  let html = md;
+  html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+  html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
+  html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  html = html.replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>");
+  html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  html = html.replace(/\n\n/g, "</p><p>");
+  html = `<p>${html}</p>`;
+  html = html.replace(/<p><\/p>/g, "");
+  return html;
+}
+
+// 简易 HTML → Markdown（从 TipTap 编辑器导出）
+function simpleHtmlToMd(html: string): string {
+  if (!html) return "";
+  let md = html;
+  md = md.replace(/<h1>(.+?)<\/h1>/gi, "# $1\n\n");
+  md = md.replace(/<h2>(.+?)<\/h2>/gi, "## $1\n\n");
+  md = md.replace(/<h3>(.+?)<\/h3>/gi, "### $1\n\n");
+  md = md.replace(/<strong>(.+?)<\/strong>/gi, "**$1**");
+  md = md.replace(/<em>(.+?)<\/em>/gi, "*$1*");
+  md = md.replace(/<code>(.+?)<\/code>/gi, "`$1`");
+  md = md.replace(/<blockquote>(.+?)<\/blockquote>/gi, "> $1\n\n");
+  md = md.replace(/<li>(.+?)<\/li>/gi, "- $1\n");
+  md = md.replace(/<a\s+href="(.+?)">(.+?)<\/a>/gi, "[$2]($1)");
+  md = md.replace(/<p>(.+?)<\/p>/gi, "$1\n\n");
+  md = md.replace(/<[^>]+>/g, "");
+  md = md.replace(/&nbsp;/g, " ");
+  md = md.replace(/&lt;/g, "<");
+  md = md.replace(/&gt;/g, ">");
+  md = md.replace(/&amp;/g, "&");
+  md = md.replace(/\n{3,}/g, "\n\n");
+  return md.trim();
 }

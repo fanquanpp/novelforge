@@ -417,6 +417,28 @@ select:focus-visible {
   outline: none;
 }
 
+/* ========== 诗歌/歌词排版样式 ========== */
+.ProseMirror .poetry-block {
+  text-align: center;
+  line-height: 2.2;
+  margin: 0.8em 0;
+  font-style: italic;
+  color: var(--fandex-text-secondary);
+}
+
+.ProseMirror .lyrics-block {
+  text-align: left;
+  line-height: 1.8;
+  margin: 0.5em 0;
+  padding-left: 2em;
+  border-left: 2px solid var(--fandex-secondary);
+  color: var(--fandex-text-secondary);
+}
+
+.ProseMirror .lyrics-block + .lyrics-block {
+  margin-top: 1em;
+}
+
 /* ========== FANDEX 提示块(Admonition) ========== */
 .fandex-admonition {
   border-left: 4px solid;
@@ -440,4 +462,53 @@ select:focus-visible {
 
 .fandex-admonition-danger {
   border-color: #ff1744;
+}
+
+/* ========== 聚焦模式 ========== */
+.fandex-focus-mode .ProseMirror {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 3rem;
+  font-size: 16px;
+  line-height: 2;
+}
+
+/* ========== 键盘可访问性 (WCAG 2.1 AA) ========== */
+*:focus-visible {
+  outline: 2px solid var(--fandex-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 高对比度模式适配 */
+@media (forced-colors: active) {
+  .fandex-bar-left {
+    border-left-color: Highlight;
+  }
+  *:focus-visible {
+    outline: 3px solid Highlight;
+  }
+}
+
+/* 系统字体缩放响应（rem 相对单位） */
+html {
+  font-size: 16px;
+}
+
+@media screen and (min-resolution: 2dppx) {
+  .ProseMirror {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* 编辑器过渡动画 */
+.fandex-focus-mode .ProseMirror {
+  transition: max-width 0.3s ease, padding 0.3s ease;
+}
+
+/* 骨架屏脉冲动画 */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }

@@ -266,8 +266,16 @@ export default function WritingStats() {
                   return (
                     <div
                       key={chapter.relative_path}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleJumpToChapter(chapter.relative_path)}
-                      className="flex items-center gap-3 p-2 hover:bg-nf-bg-hover transition-fast cursor-pointer group"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleJumpToChapter(chapter.relative_path);
+                        }
+                      }}
+                      className="flex items-center gap-3 p-2 hover:bg-nf-bg-hover transition-fast cursor-pointer group focus-visible:outline focus-visible:outline-2 focus-visible:outline-fandex-primary focus-visible:outline-offset-[-2px]"
                     >
                       {/* 排名 */}
                       <span className={`text-xs font-bold font-display w-6 text-center ${rankColor}`}>

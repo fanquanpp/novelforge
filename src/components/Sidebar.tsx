@@ -1,15 +1,17 @@
 // 工作台左侧导航栏组件
 //
 // 功能概述：
-// 显示项目分类导航(角色/世界观/名词/时间线/正文/大纲/素材)。
+// 显示项目分类导航(角色/世界观/名词/时间线/正文/大纲/素材)和最近打开文件。
 // 采用 FANDEX 美术风格：左侧色条装饰、直角按钮、1px 边框。
 //
 // 模块职责：
 // 1. 渲染项目名称与返回按钮
 // 2. 渲染分类导航列表
-// 3. 高亮当前选中分类
-// 4. 触发分类切换
+// 3. 渲染最近打开的 5 个文件
+// 4. 高亮当前选中分类
+// 5. 触发分类切换
 
+import { useEffect, useState } from "react";
 import {
   Users,
   Globe,
@@ -24,6 +26,7 @@ import {
   Moon,
   BarChart3,
   Search,
+  Clock,
 } from "lucide-react";
 import {
   useAppStore,
@@ -31,6 +34,7 @@ import {
   type SidebarCategory,
 } from "../lib/store";
 import { useThemeStore } from "../lib/themeStore";
+import { getRecentFiles, type RecentFile } from "../lib/recentFiles";
 
 // 图标映射
 const ICON_MAP: Record<SidebarCategory, React.ComponentType<{ className?: string }>> = {
@@ -75,6 +79,17 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
   const { currentProject, activeCategory, setActiveCategory, closeProject } =
     useAppStore();
   const { theme, toggleTheme } = useThemeStore();
+  const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
+
+  // 加载最近文件（仅显示当前项目的）
+  useEffect(() => {
+    if (!currentProject) return;
+    const all = getRecentFiles();
+    const projectFiles = all.filter(
+      (f) => f.project_path === currentProject.path
+    );
+    setRecentFiles(projectFiles.slice(0, 5));
+  }, [currentProject]);
 
   return (
     <div className="w-40 min-w-[150px] border-r border-nf-border-light bg-nf-bg-sidebar flex flex-col">
@@ -123,6 +138,26 @@ export default function Sidebar({ onCreateFile }: SidebarProps) {
             </button>
           );
         })}
+
+        {/* 最近文件（仅当前项目） */}
+        {recentFiles.length > 0 && (
+          <>
+            <div className="px-3 py-1 mt-3 text-[10px] font-semibold text-nf-text-tertiary uppercase tracking-wider flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              最近
+            </div>
+            {recentFiles.map((rf) => (
+              <button
+                key={rf.relative_path}
+                title={rf.name}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-nf-text-tertiary hover:text-nf-text hover:bg-nf-bg-hover transition-fast truncate"
+              >
+                <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{rf.name}</span>
+              </button>
+            ))}
+          </>
+        )}
 
         {/* 工具分组 */}
         <div className="px-3 py-1 mt-3 text-[10px] font-semibold text-nf-text-tertiary uppercase tracking-wider">

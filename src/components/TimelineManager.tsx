@@ -11,11 +11,12 @@
 // 3. 支持编辑与删除事件
 // 4. 支持分支筛选
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Trash2, Edit3, GitBranch, Clock, X } from "lucide-react";
 import { useAppStore } from "../lib/store";
 import { readFile, writeFile, deletePath, readProjectTree } from "../lib/api";
 import type { FileNode } from "../lib/api";
+import { findDirByName } from "../lib/fileTreeUtils";
 
 // 时间线事件接口
 interface TimelineEvent {
@@ -88,17 +89,7 @@ export default function TimelineManager() {
     try {
       const tree = await readProjectTree(currentProject.path);
       // 查找时间线目录
-      const findDir = (nodes: FileNode[]): FileNode | null => {
-        for (const n of nodes) {
-          if (n.name === "时间线" && n.is_dir) return n;
-          if (n.is_dir && n.children.length > 0) {
-            const found = findDir(n.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const dir = findDir(tree);
+      const dir = findDirByName(tree, "时间线");
       const files = dir?.children.filter((f) => !f.is_dir) || [];
 
       const eventList: TimelineEvent[] = [];
@@ -117,8 +108,15 @@ export default function TimelineManager() {
         }
       }
 
-      // 按时间排序(字符串排序,用户应使用可排序的时间格式)
-      eventList.sort((a, b) => a.time.localeCompare(b.time));
+      // 按时间排序（优先数值比较，回退字符串比较）
+      eventList.sort((a, b) => {
+        const ta = Date.parse(a.time);
+        const tb = Date.parse(b.time);
+        if (!isNaN(ta) && !isNaN(tb)) return ta - tb;
+        if (!isNaN(ta)) return -1;
+        if (!isNaN(tb)) return 1;
+        return a.time.localeCompare(b.time);
+      });
       setEvents(eventList);
       setBranches(Array.from(branchSet));
     } catch (e) {
@@ -170,18 +168,14 @@ export default function TimelineManager() {
   // 输入: event 事件数据
   // 输出: 无
   // 流程: 将事件序列化为 Markdown 并写入文件
-  const handleSaveEvent = async (event: TimelineEvent) => {
+  const handleSaveEvent = useCallback(async (event: TimelineEvent) => {
     if (!currentProject) return;
     const content = `# ${event.title}\n\n- 时间: ${event.time}\n- 分支: ${event.branch}\n\n---\n\n${event.description}\n`;
-    try {
-      await writeFile(`${currentProject.path}\\${event.relativePath}`, content);
-      setShowEditor(false);
-      setEditingEvent(null);
-      await loadEvents();
-    } catch (e) {
-      alert(`保存失败: ${e}`);
-    }
-  };
+    await writeFile(`${currentProject.path}\\${event.relativePath}`, content);
+    setShowEditor(false);
+    setEditingEvent(null);
+    await loadEvents();
+  }, [currentProject, loadEvents]);
 
   // 过滤当前分支的事件
   const filteredEvents =
@@ -328,6 +322,43 @@ function EventEditor({ event, branches, onClose, onSave }: EventEditorProps) {
   const [branch, setBranch] = useState(event?.branch || "主线");
   const [description, setDescription] = useState(event?.description || "");
   const [newBranch, setNewBranch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // 焦点陷阱 + Esc 关闭
+  useEffect(() => {
+    firstInputRef.current?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      // Enter 提交（不在 textarea 内时）
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        handleSave();
+      }
+      // 焦点陷阱
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'input, select, textarea, button, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, title, time, branch, description, newBranch]);
 
   // 生成文件相对路径
   // 输入: 无
@@ -344,23 +375,29 @@ function EventEditor({ event, branches, onClose, onSave }: EventEditorProps) {
   // 输入: 无
   // 输出: 无
   // 流程: 校验后调用 onSave
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
       alert("请输入事件标题");
       return;
     }
-    const finalBranch = newBranch.trim() || branch;
-    onSave({
-      relativePath: getRelativePath(),
-      time: time || "未知时间",
-      title: title.trim(),
-      description: description.trim(),
-      branch: finalBranch,
-    });
+    if (saving) return;
+    setSaving(true);
+    try {
+      const finalBranch = newBranch.trim() || branch;
+      await onSave({
+        relativePath: getRelativePath(),
+        time: time || "未知时间",
+        title: title.trim(),
+        description: description.trim(),
+        branch: finalBranch,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden">
         {/* 头部 - FANDEX 左侧色条标题 */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-nf-border-light">
@@ -383,11 +420,11 @@ function EventEditor({ event, branches, onClose, onSave }: EventEditorProps) {
               事件标题
             </label>
             <input
+              ref={firstInputRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="输入事件标题"
-              autoFocus
               className="w-full bg-nf-bg border border-nf-border-light px-3 py-2 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none focus:border-fandex-primary/60 transition-fast"
             />
           </div>
@@ -457,9 +494,10 @@ function EventEditor({ event, branches, onClose, onSave }: EventEditorProps) {
           </button>
           <button
             onClick={handleSave}
-            className="px-3 py-1.5 bg-fandex-primary hover:bg-fandex-primary-hover text-sm font-medium text-nf-text-inverse transition-fast"
+            disabled={saving}
+            className="px-3 py-1.5 bg-fandex-primary hover:bg-fandex-primary-hover text-sm font-medium text-nf-text-inverse transition-fast disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            保存
+            {saving ? "保存中..." : "保存"}
           </button>
         </div>
       </div>

@@ -120,32 +120,5 @@ function applyLyricsStyle(view: EditorView): void {
   view.dispatch(tr);
 }
 
-// 诗歌与歌词的 CSS 样式（注入到文档）
-// 输入: 无
-// 输出: CSS 样式字符串
-// 流程: 返回诗歌与歌词的样式定义
-export const POETRY_STYLES = `
-/* 诗歌块样式 - 居中、行间距加大 */
-.ProseMirror .poetry-block {
-  text-align: center;
-  line-height: 2.2;
-  margin: 0.8em 0;
-  font-style: italic;
-  color: var(--fandex-text-secondary, #b3b3b3);
-}
+// 诗歌与歌词 CSS 样式已迁移至 src/styles.css，POETRY_STYLES 导出已废弃
 
-/* 歌词块样式 - 带左侧装饰、节间分隔 */
-.ProseMirror .lyrics-block {
-  text-align: left;
-  line-height: 1.8;
-  margin: 0.5em 0;
-  padding-left: 2em;
-  border-left: 2px solid var(--fandex-secondary, #55efc4);
-  color: var(--fandex-text-secondary, #b3b3b3);
-}
-
-/* 歌词节间分隔 */
-.ProseMirror .lyrics-block + .lyrics-block {
-  margin-top: 1em;
-}
-`;

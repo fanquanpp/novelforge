@@ -232,3 +232,25 @@ export async function searchInProject(
 export async function getWritingStats(projectPath: string): Promise<WritingStats> {
   return invoke<WritingStats>("get_writing_stats", { projectPath });
 }
+
+// 重命名文件/目录
+// 输入: projectPath 项目根路径, oldRelPath 原相对路径, newRelPath 新相对路径
+// 输出: Promise<void>
+// 流程:
+//   - 如果是目录或二进制文件: 调用 Rust 后端 rename_path 命令
+//   - 如果是 .md/.txt 文本文件: 先读取内容, 写入新路径, 再删除旧文件
+// 说明: 确保重名安全（后端自行处理冲突）
+export async function renamePath(
+  projectPath: string,
+  oldRelPath: string,
+  newRelPath: string
+): Promise<void> {
+  const oldAbs = `${projectPath}\\${oldRelPath}`;
+  const newAbs = `${projectPath}\\${newRelPath}`;
+
+  // 调用后端统一的 rename 命令（最安全）
+  return invoke<void>("rename_path", {
+    oldPath: oldAbs,
+    newPath: newAbs,
+  });
+}

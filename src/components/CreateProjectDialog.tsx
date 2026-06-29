@@ -10,7 +10,7 @@
 // 3. 调用后端 API 创建项目
 // 4. 创建成功后触发回调
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { X, FolderOpen, Loader2 } from "lucide-react";
 import { createProject, pickDirectory, PROJECT_TEMPLATES, type ProjectType } from "../lib/api";
 
@@ -41,6 +41,32 @@ export default function CreateProjectDialog({
   const [parentPath, setParentPath] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+
+  const handleCreateRef = useRef<() => void>(() => {});
+
+  // Esc 关闭, Enter 提交
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !creating) {
+        onClose();
+        return;
+      }
+      if (
+        e.key === "Enter" &&
+        !creating &&
+        !(e.target instanceof HTMLTextAreaElement) &&
+        !(e.target instanceof HTMLButtonElement)
+      ) {
+        e.preventDefault();
+        handleCreateRef.current();
+      }
+    },
+    [onClose, creating]
+  );
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   const handlePickDir = async () => {
     try {
@@ -80,6 +106,9 @@ export default function CreateProjectDialog({
       setCreating(false);
     }
   };
+
+  // 将 handleCreate 挂载到 ref 供键盘事件使用
+  handleCreateRef.current = handleCreate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
