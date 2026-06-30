@@ -38,4 +38,6 @@ pnpm-debug.log*
 
 # Git 提交消息临时文件
 _commitmsg.tmp
+_releasenotes.md
+_*.tmp
 
