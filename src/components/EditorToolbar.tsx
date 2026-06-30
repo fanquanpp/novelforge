@@ -14,6 +14,7 @@
 // 4. EditorToolbar: 完整的工具栏组件
 
 import type { Editor } from "@tiptap/core";
+import { useState } from "react";
 import {
   Bold,
   Italic,
@@ -35,6 +36,7 @@ import {
   Play,
   Target,
   History,
+  RotateCcw,
 } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 
@@ -93,8 +95,14 @@ interface SessionStatsProps {
   progress: number;
   /** 是否暂停 */
   paused: boolean;
+  /** 会话开始时间（ISO） */
+  startedAt?: string;
   /** 暂停/恢复回调 */
   onTogglePause: () => void;
+  /** 设定目标回调 */
+  onSetTarget: (target: number) => void;
+  /** 重置会话回调 */
+  onResetSession?: () => void;
 }
 
 /**
@@ -113,6 +121,7 @@ function formatDuration(seconds: number): string {
 
 // 写作会话统计小组件
 // 显示本次会话字数、时长、WPM 与目标进度条
+// 点击 Target 图标弹出目标设定对话框，长按可重置会话
 function SessionStats({
   sessionWords,
   sessionDuration,
@@ -120,8 +129,15 @@ function SessionStats({
   wordTarget,
   progress,
   paused,
+  startedAt,
   onTogglePause,
+  onSetTarget,
+  onResetSession,
 }: SessionStatsProps) {
+  const { t } = useI18n();
+  const [targetDialogOpen, setTargetDialogOpen] = useState(false);
+  const [inputTarget, setInputTarget] = useState<string>(String(wordTarget || ""));
+
   // 净增字数着色：正数绿色，负数红色，零灰色
   const wordsColor =
     sessionWords > 0
@@ -130,12 +146,36 @@ function SessionStats({
         ? "text-fandex-tertiary"
         : "text-nf-text-tertiary";
 
+  // 打开对话框时同步当前目标值
+  const handleOpenDialog = () => {
+    setInputTarget(String(wordTarget || ""));
+    setTargetDialogOpen(true);
+  };
+
+  // 确认设定目标
+  const handleConfirmTarget = () => {
+    const n = parseInt(inputTarget, 10);
+    if (!isNaN(n) && n >= 0) {
+      onSetTarget(n);
+    }
+    setTargetDialogOpen(false);
+  };
+
+  // 清除目标
+  const handleClearTarget = () => {
+    onSetTarget(0);
+    setTargetDialogOpen(false);
+  };
+
+  // 常用目标快捷设定
+  const quickTargets = [500, 1000, 2000, 5000];
+
   return (
     <div className="flex items-center gap-2 text-xs">
       {/* 暂停/恢复按钮 */}
       <button
         onClick={onTogglePause}
-        title={paused ? "恢复会话" : "暂停会话"}
+        title={paused ? t("editor.sessionReset") : "暂停会话"}
         className={`p-1 transition-all duration-base ease-fandex border ${
           paused
             ? "bg-fandex-tertiary/10 text-fandex-tertiary border-fandex-tertiary/40"
@@ -158,19 +198,131 @@ function SessionStats({
           {wpm} <span className="text-nf-text-tertiary/60">wpm</span>
         </span>
       )}
-      {/* 目标进度条 */}
-      {wordTarget > 0 && (
-        <div className="flex items-center gap-1.5" title={`目标 ${wordTarget} 字 / 已完成 ${Math.round(progress * 100)}%`}>
-          <Target className="w-3 h-3 text-fandex-primary" />
-          <div className="w-16 h-1.5 bg-nf-bg-hover border border-nf-border-light/40 overflow-hidden">
-            <div
-              className="h-full bg-fandex-primary transition-all duration-base ease-fandex"
-              style={{ width: `${Math.min(100, progress * 100)}%` }}
-            />
+      {/* 目标进度条（点击可设定/修改目标） */}
+      <button
+        onClick={handleOpenDialog}
+        title={t("editor.setTarget")}
+        className={`flex items-center gap-1.5 px-1 py-0.5 transition-all duration-base ease-fandex border ${
+          wordTarget > 0
+            ? "bg-fandex-primary/10 border-fandex-primary/30 hover:bg-fandex-primary/15"
+            : "border-transparent hover:bg-nf-bg-hover border-transparent"
+        }`}
+      >
+        <Target className={`w-3 h-3 ${wordTarget > 0 ? "text-fandex-primary" : "text-nf-text-tertiary"}`} />
+        {wordTarget > 0 ? (
+          <>
+            <div className="w-16 h-1.5 bg-nf-bg-hover border border-nf-border-light/40 overflow-hidden">
+              <div
+                className="h-full bg-fandex-primary transition-all duration-base ease-fandex"
+                style={{ width: `${Math.min(100, progress * 100)}%` }}
+              />
+            </div>
+            <span className="tabular-nums text-nf-text-tertiary text-[10px]">
+              {Math.round(progress * 100)}%
+            </span>
+          </>
+        ) : (
+          <span className="text-[10px] text-nf-text-tertiary">{t("editor.setTarget")}</span>
+        )}
+      </button>
+      {/* 重置会话按钮（仅当有目标或会话有数据时显示） */}
+      {onResetSession && (wordTarget > 0 || sessionWords !== 0) && (
+        <button
+          onClick={() => {
+            if (window.confirm(t("editor.sessionResetConfirm"))) {
+              onResetSession();
+            }
+          }}
+          title={t("editor.sessionReset")}
+          className="p-1 text-nf-text-tertiary hover:text-fandex-tertiary transition duration-fast"
+        >
+          <RotateCcw className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* 目标设定对话框 */}
+      {targetDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setTargetDialogOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-nf-border-light">
+              <h3 className="fandex-bar-left text-sm font-semibold font-display text-nf-text">
+                {t("editor.targetDialogTitle")}
+              </h3>
+              <p className="text-xs text-nf-text-tertiary mt-1">
+                {t("editor.targetDialogDesc")}
+              </p>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {/* 目标输入 */}
+              <div>
+                <label className="text-xs text-nf-text-secondary mb-1.5 block">
+                  {t("editor.targetValue")}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={inputTarget}
+                  onChange={(e) => setInputTarget(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleConfirmTarget();
+                    if (e.key === "Escape") setTargetDialogOpen(false);
+                  }}
+                  autoFocus
+                  className="w-full bg-nf-bg border border-nf-border-light px-3 py-2 text-sm text-nf-text focus:outline-none focus:border-fandex-primary/60 transition duration-fast"
+                />
+                <p className="text-[10px] text-nf-text-tertiary mt-1">
+                  {t("editor.targetHint")}
+                </p>
+              </div>
+              {/* 快捷目标按钮 */}
+              <div className="flex flex-wrap gap-1.5">
+                {quickTargets.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setInputTarget(String(n))}
+                    className="px-2.5 py-1 text-xs text-nf-text-secondary bg-nf-bg border border-nf-border-light hover:border-fandex-primary/50 hover:text-fandex-primary transition duration-fast"
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {/* 会话信息（若有 startedAt） */}
+              {startedAt && (
+                <div className="text-[10px] text-nf-text-tertiary border-t border-nf-border-light pt-2">
+                  {t("editor.sessionStarted")}: {new Date(startedAt).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between gap-2 px-5 py-3 border-t border-nf-border-light">
+              <button
+                onClick={handleClearTarget}
+                className="px-3 py-1.5 text-sm text-nf-text-tertiary hover:text-fandex-tertiary transition duration-fast"
+              >
+                {t("editor.targetClear")}
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTargetDialogOpen(false)}
+                  className="px-3 py-1.5 text-sm text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover transition duration-fast"
+                >
+                  {t("editor.targetCancel")}
+                </button>
+                <button
+                  onClick={handleConfirmTarget}
+                  className="px-3 py-1.5 text-sm font-medium text-nf-text-inverse bg-fandex-primary hover:bg-fandex-primary-hover transition duration-fast"
+                >
+                  {t("editor.targetConfirm")}
+                </button>
+              </div>
+            </div>
           </div>
-          <span className="tabular-nums text-nf-text-tertiary text-[10px]">
-            {Math.round(progress * 100)}%
-          </span>
         </div>
       )}
     </div>
@@ -195,7 +347,10 @@ interface EditorToolbarProps {
   wordTarget: number;
   progress: number;
   sessionPaused: boolean;
+  sessionStartedAt?: string;
   onToggleSessionPause: () => void;
+  onSetSessionTarget: (target: number) => void;
+  onResetSession?: () => void;
   // 专注模式快捷切换
   typewriterMode: boolean;
   focusDim: boolean;
@@ -223,7 +378,10 @@ export default function EditorToolbar({
   wordTarget,
   progress,
   sessionPaused,
+  sessionStartedAt,
   onToggleSessionPause,
+  onSetSessionTarget,
+  onResetSession,
   typewriterMode,
   focusDim,
   onToggleTypewriter,
@@ -417,7 +575,10 @@ export default function EditorToolbar({
           wordTarget={wordTarget}
           progress={progress}
           paused={sessionPaused}
+          startedAt={sessionStartedAt}
           onTogglePause={onToggleSessionPause}
+          onSetTarget={onSetSessionTarget}
+          onResetSession={onResetSession}
         />
         <Divider />
         {/* 专注模式快捷切换 */}

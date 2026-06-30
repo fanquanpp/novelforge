@@ -550,7 +550,10 @@ export default function NovelEditor({
         wordTarget={session.wordTarget}
         progress={session.progress}
         sessionPaused={session.paused}
+        sessionStartedAt={session.startedAt}
         onToggleSessionPause={session.togglePause}
+        onSetSessionTarget={session.updateWordTarget}
+        onResetSession={session.resetSession}
         typewriterMode={typewriterMode}
         focusDim={focusDim}
         onToggleTypewriter={() => useSettingsStore.getState().setTypewriterMode(!typewriterMode)}
