@@ -156,11 +156,17 @@ export default function Workspace() {
 
   // 根据分类和设置生成文件初始内容
   const getFileTemplate = useCallback(
-    (fileName: string, category: SidebarCategory): string => {
-      const title = fileName.replace(/\.txt$/i, "").trim();
+    (fileName: string, category: SidebarCategory, chapterNum?: number): string => {
+      const title = fileName.replace(/\.txt$/i, "").replace(/^\d+[._\-\s]*/, "").trim();
       switch (category) {
         case "manuscript": {
-          // 使用编号.标题作为文件内容标题
+          // 正文文件：使用设置中的章节标题格式生成内容标题
+          // 文件名（如 1.章节名.txt）仅用于排序，内容标题按用户设置的格式显示
+          if (chapterNum !== undefined) {
+            const heading = formatChapterHeading(chapterNum, bookTitle, chapterFormat, autoFillBookTitle);
+            return `${heading}\n\n`;
+          }
+          // 无编号时（如序章）直接用标题
           return `${title}\n\n`;
         }
         case "outline":
@@ -174,7 +180,7 @@ export default function Workspace() {
           return `${title}\n\n`;
       }
     },
-    [autoOutlineSkeleton]
+    [autoOutlineSkeleton, chapterFormat, autoFillBookTitle, bookTitle]
   );
 
   // 处理新建文件确认（正文自动编号）
@@ -195,11 +201,13 @@ export default function Workspace() {
     }
 
     let finalFileName = fileName;
+    let chapterNum: number | undefined;
     if (activeCategory === "manuscript") {
       // 自动推算编号并前缀
       const manuscriptDir = findDirByName(projectTree, getCategoryDir("manuscript"));
       const existingFiles = manuscriptDir?.children.filter((f) => !f.is_dir) || [];
       const nextNum = getNextChapterNum(existingFiles);
+      chapterNum = nextNum;
       // 去掉用户可能输入的编号前缀
       const cleanName = fileName.replace(/^\d+[._\-\s]*/, "").trim();
       finalFileName = `${nextNum}.${cleanName}`;
@@ -209,7 +217,7 @@ export default function Workspace() {
     const relativePath = manuscriptSubDir
       ? `${dirName}/${manuscriptSubDir}/${finalFileName}`
       : `${dirName}/${finalFileName}`;
-    const templateContent = getFileTemplate(finalFileName, activeCategory);
+    const templateContent = getFileTemplate(finalFileName, activeCategory, chapterNum);
     await createFile(currentProject.path, relativePath, templateContent);
     const tree = await readProjectTree(currentProject.path);
     setProjectTree(tree);
