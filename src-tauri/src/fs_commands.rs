@@ -19,7 +19,8 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::project_template::{
     common_directories, common_files, create_project_meta, initial_manuscript_file,
-    type_specific_directories, type_specific_files, ProjectMeta, ProjectType,
+    project_type_label, render_template, type_specific_directories, type_specific_files,
+    ProjectMeta, ProjectType, TemplateVars,
 };
 
 /// 自定义模板结构
@@ -223,23 +224,37 @@ pub fn create_project(
         }
     }
 
-    // 写入通用预设文件
+    // 构造模板变量：用于替换预设文件中的 {{项目名}} {{作者名}} {{当前日期}} 等占位符
+    let now = chrono::Local::now();
+    let template_vars = TemplateVars {
+        project_name: name.clone(),
+        author: author.clone(),
+        date: now.format("%Y-%m-%d").to_string(),
+        time: now.format("%H:%M").to_string(),
+        project_type_label: project_type_label(&project_type).to_string(),
+        genre: genre.clone(),
+        description: description.clone(),
+    };
+
+    // 写入通用预设文件（应用模板变量替换）
     for (rel_path, content) in common_files() {
         let file_path = project_root.join(rel_path);
         if let Some(parent) = file_path.parent() {
             fs::create_dir_all(parent).map_err(|e| format!("创建父目录失败: {}", e))?;
         }
-        fs::write(&file_path, content)
+        let rendered = render_template(content, &template_vars);
+        fs::write(&file_path, rendered)
             .map_err(|e| format!("写入文件失败 {}: {}", rel_path, e))?;
     }
 
-    // 写入类型专属预设文件
+    // 写入类型专属预设文件（应用模板变量替换）
     for (rel_path, content) in type_specific_files(&project_type) {
         let file_path = project_root.join(rel_path);
         if let Some(parent) = file_path.parent() {
             fs::create_dir_all(parent).map_err(|e| format!("创建父目录失败: {}", e))?;
         }
-        fs::write(&file_path, content)
+        let rendered = render_template(&content, &template_vars);
+        fs::write(&file_path, rendered)
             .map_err(|e| format!("写入专属文件失败 {}: {}", rel_path, e))?;
     }
 
