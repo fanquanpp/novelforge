@@ -144,7 +144,7 @@ export default function EditorToolbar({
     }
   };
 
-  // 引用格式：用""包裹选中文本
+  // 引用格式：用「」包裹选中文本
   const handleBlockQuote = () => {
     if (!editor) return;
     const { from, to } = editor.state.selection;
@@ -152,11 +152,11 @@ export default function EditorToolbar({
     if (selectedText) {
       editor.chain().focus()
         .deleteSelection()
-        .insertContent(`\u201c${selectedText}\u201d`)
+        .insertContent(`\u300c${selectedText}\u300d`)
         .run();
     } else {
       editor.chain().focus()
-        .insertContent("\u201c\u201d")
+        .insertContent("\u300c\u300d")
         .setTextSelection(from + 1)
         .run();
     }

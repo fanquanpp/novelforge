@@ -159,14 +159,15 @@ pub fn create_project(
     fs::write(&meta_path, meta_json)
         .map_err(|e| format!("写入元数据失败: {}", e))?;
 
-    // 创建正文初始文件 (.txt 纯文本，按文体类型)
-    let (manuscript_name, manuscript_content) = initial_manuscript_file(&project_type);
-    let manuscript_path = project_root.join("正文").join(manuscript_name);
-    if let Some(parent) = manuscript_path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("创建正文子目录失败: {}", e))?;
+    // 创建正文初始文件（当前所有类型均不自动创建，由用户自行创建）
+    if let Some((manuscript_name, manuscript_content)) = initial_manuscript_file(&project_type) {
+        let manuscript_path = project_root.join("正文").join(manuscript_name);
+        if let Some(parent) = manuscript_path.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("创建正文子目录失败: {}", e))?;
+        }
+        fs::write(&manuscript_path, manuscript_content)
+            .map_err(|e| format!("创建正文文件失败: {}", e))?;
     }
-    fs::write(&manuscript_path, manuscript_content)
-        .map_err(|e| format!("创建正文文件失败: {}", e))?;
 
     Ok(project_root.to_string_lossy().to_string())
 }

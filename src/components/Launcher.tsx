@@ -367,7 +367,7 @@ export default function Launcher() {
         </div>
 
         {/* 新建项目按钮 + 类型选择面板 */}
-        <div className="px-4 space-y-2">
+        <div className="px-4 space-y-2 flex flex-col flex-1 min-h-0">
           <button
             onClick={handleNewProjectClick}
             className="w-full flex items-center gap-2.5 px-4 py-3 bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse font-medium text-sm transition-all duration-base ease-fandex shadow-sm hover:shadow-md"
@@ -378,11 +378,11 @@ export default function Launcher() {
           </button>
 
           {/* 文体类型选择面板 - 展开式 */}
-          <div className={`overflow-hidden transition-all duration-300 ease-fandex ${
-            typePanelExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          <div className={`overflow-hidden transition-all duration-300 ease-fandex flex flex-col ${
+            typePanelExpanded ? 'flex-1 min-h-0 opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="border border-nf-border-light bg-nf-bg/50 mt-2">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-nf-border-light/50">
+            <div className="border border-nf-border-light bg-nf-bg/50 mt-2 flex flex-col flex-1 min-h-0">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-nf-border-light/50 flex-shrink-0">
                 <span className="text-xs font-semibold text-nf-text-secondary">
                   {t("project.formTypeLabel")}
                 </span>
@@ -393,7 +393,7 @@ export default function Launcher() {
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="p-1.5 max-h-96 overflow-y-auto space-y-0.5">
+              <div className="p-1.5 overflow-y-auto flex-1 space-y-0.5">
                 {PROJECT_TEMPLATES.map((tpl) => {
                   const Icon = TYPE_ICONS[tpl.id] || FileText;
                   return (

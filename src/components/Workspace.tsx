@@ -16,7 +16,6 @@ import Sidebar from "./Sidebar";
 import FileList from "./FileList";
 import NovelEditor from "./NovelEditor";
 import CardManager from "./CardManager";
-import TimelineManager from "./TimelineManager";
 import WritingStats from "./WritingStats";
 import GlobalSearch from "./GlobalSearch";
 import VolumeManager from "./VolumeManager";
@@ -41,8 +40,7 @@ const ALT_CATEGORY_MAP: Record<string, SidebarCategory> = {
   "4": "worldview",
   "5": "glossary",
   "6": "materials",
-  "7": "timeline",
-  "8": "stats",
+  "7": "stats",
 };
 
 export default function Workspace() {
@@ -160,13 +158,15 @@ export default function Workspace() {
       const title = fileName.replace(/\.txt$/i, "").replace(/^\d+[._\-\s]*/, "").trim();
       switch (category) {
         case "manuscript": {
-          // 正文文件：使用设置中的章节标题格式生成内容标题
-          // 文件名（如 1.章节名.txt）仅用于排序，内容标题按用户设置的格式显示
-          if (chapterNum !== undefined) {
+          // 仅对小说类文体使用章节标题格式（中文/阿拉伯/英文）
+          // 其他类型（日记/诗歌/剧本等）直接使用文件标题作为正文首行
+          const projectType = currentProject?.meta?.type;
+          const isNovelType = projectType === "standard" || projectType === "multi_volume" || projectType === "short_story";
+          if (chapterNum !== undefined && isNovelType) {
             const heading = formatChapterHeading(chapterNum, bookTitle, chapterFormat, autoFillBookTitle);
             return `${heading}\n\n`;
           }
-          // 无编号时（如序章）直接用标题
+          // 非小说类型或无编号时直接用标题
           return `${title}\n\n`;
         }
         case "outline":
@@ -180,7 +180,7 @@ export default function Workspace() {
           return `${title}\n\n`;
       }
     },
-    [autoOutlineSkeleton, chapterFormat, autoFillBookTitle, bookTitle]
+    [autoOutlineSkeleton, chapterFormat, autoFillBookTitle, bookTitle, currentProject]
   );
 
   // 处理新建文件确认（正文自动编号）
@@ -273,8 +273,6 @@ export default function Workspace() {
   const renderMiddlePanel = () => {
     const cfg = getCategoryConfig(activeCategory);
     switch (cfg.panelType) {
-      case "timeline":
-        return <TimelineManager />;
       case "stats":
         return <WritingStats />;
       case "search":

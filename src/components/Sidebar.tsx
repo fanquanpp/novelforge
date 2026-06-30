@@ -60,7 +60,6 @@ const CONTENT_CATEGORIES: SidebarCategory[] = [
   "characters",
   "worldview",
   "glossary",
-  "timeline",
   "outline",
   "materials",
 ];

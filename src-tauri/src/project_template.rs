@@ -335,16 +335,9 @@ pub fn type_specific_files(project_type: &ProjectType) -> Vec<(&'static str, Str
 }
 
 /// 获取特定文体的初始正文文件（文件名, 内容）
-pub fn initial_manuscript_file(project_type: &ProjectType) -> (&'static str, &'static str) {
-    match project_type {
-        ProjectType::ShortStory => ("正文.txt", "标题\n\n开始你的创作...\n"),
-        ProjectType::Diary => ("第一篇.txt", "日期：\n天气：\n心情：\n\n开始你的创作...\n"),
-        ProjectType::Dialogue => ("第一幕.txt", "第一幕\n\n开始你的创作...\n"),
-        ProjectType::SharedWorld => ("第一部/第一章.txt", "第一章\n\n开始你的创作...\n"),
-        ProjectType::Screenplay => ("第一幕.txt", "第一幕\n\n场景：\n时间：\n人物：\n\n开始你的创作...\n"),
-        ProjectType::Poetry => ("诗稿.txt", "标题\n\n开始你的创作...\n"),
-        ProjectType::MultiVolume | ProjectType::Standard => ("第一章.txt", "第一章\n\n开始你的创作...\n"),
-    }
+/// 所有类型均不自动创建正文文件，由用户自行创建第一个 txt
+pub fn initial_manuscript_file(_project_type: &ProjectType) -> Option<(&'static str, &'static str)> {
+    None
 }
 
 /// 生成项目元数据
