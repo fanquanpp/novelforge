@@ -21,7 +21,7 @@ type TranslationDict = Record<string, string>;
 // 中文翻译
 const zhCN: TranslationDict = {
   // ── 通用 ──
-  "app.title": "喵创说",
+  "app.title": "MiaoChuangShuo",
   "app.loading": "加载中…",
   "app.error": "发生错误",
   "app.retry": "重试",
@@ -44,7 +44,7 @@ const zhCN: TranslationDict = {
   "common.close": "关闭",
 
   // ── 启动器 ──
-  "launcher.title": "喵创说",
+  "launcher.title": "MiaoChuangShuo",
   "launcher.subtitle": "沉浸式创作工坊",
   "launcher.newProject": "新建项目",
   "launcher.importProject": "导入项目",
@@ -58,8 +58,8 @@ const zhCN: TranslationDict = {
   "launcher.localReady": "本地环境就绪",
   "launcher.searchPlaceholder": "搜索项目名称…",
   "launcher.importLocal": "导入本地已有项目",
-  "launcher.welcome": "欢迎使用 喵创说",
-  "launcher.welcomeHint": "点击左侧「创建全新项目」开始你的创作之旅",
+  "launcher.welcome": "欢迎使用 MiaoChuangShuo",
+  "launcher.welcomeHint": "点击左侧「创建全新项目」按钮新建项目",
   "launcher.welcomeRecentHint": "最近创作：《{name}》",
   "launcher.importFailed": "导入失败：{error}",
   "launcher.scanFailed": "扫描项目失败：{error}",
@@ -113,6 +113,7 @@ const zhCN: TranslationDict = {
   "projectcard.deleteTooltip": "删除项目",
   "projectcard.authorLabel": "作者",
   "projectcard.genreLabel": "题材",
+  "projectcard.createdLabel": "创建时间",
 
   // ── 项目对话框 ──
   "project.createTitle": "创建新项目",
@@ -1041,7 +1042,7 @@ const zhCN: TranslationDict = {
 // 英文翻译
 const enUS: TranslationDict = {
   // ── Common ──
-  "app.title": "喵创说",
+  "app.title": "MiaoChuangShuo",
   "app.loading": "Loading…",
   "app.error": "An error occurred",
   "app.retry": "Retry",
@@ -1064,7 +1065,7 @@ const enUS: TranslationDict = {
   "common.close": "Close",
 
   // ── Launcher ──
-  "launcher.title": "喵创说",
+  "launcher.title": "MiaoChuangShuo",
   "launcher.subtitle": "Immersive Writing Studio",
   "launcher.newProject": "New Project",
   "launcher.importProject": "Import Project",
@@ -1078,8 +1079,8 @@ const enUS: TranslationDict = {
   "launcher.localReady": "Local Environment Ready",
   "launcher.searchPlaceholder": "Search projects…",
   "launcher.importLocal": "Import Existing Project",
-  "launcher.welcome": "Welcome to 喵创说",
-  "launcher.welcomeHint": "Click \"Create New Project\" to start your journey",
+  "launcher.welcome": "Welcome to MiaoChuangShuo",
+  "launcher.welcomeHint": "Click \"Create New Project\" on the left to begin",
   "launcher.welcomeRecentHint": "Recently working on: {name}",
   "launcher.importFailed": "Import failed: {error}",
   "launcher.scanFailed": "Failed to scan projects: {error}",
@@ -1133,6 +1134,7 @@ const enUS: TranslationDict = {
   "projectcard.deleteTooltip": "Delete project",
   "projectcard.authorLabel": "Author",
   "projectcard.genreLabel": "Genre",
+  "projectcard.createdLabel": "Created",
 
   // ── Project Dialog ──
   "project.createTitle": "New Project",

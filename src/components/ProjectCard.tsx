@@ -6,7 +6,7 @@
 // 支持键盘导航和删除操作。
 
 import { memo, useCallback } from "react";
-import { Clock, BarChart3, BookOpen, Trash2 } from "lucide-react";
+import { Clock, BarChart3, BookOpen, Trash2, Calendar, User, Tag } from "lucide-react";
 import { useAppStore } from "../lib/store";
 import type { ProjectInfo } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -28,6 +28,8 @@ export interface ProjectData {
   description: string;
   /** 项目题材（中文化后的字符串,可为空） */
   genre: string;
+  /** 项目创建时间(ISO 8601 字符串,用于卡片展示) */
+  createdAt: string;
 }
 
 /** ProjectCard 组件属性 */
@@ -107,9 +109,30 @@ function ProjectCardImpl({ project, projectInfo, onDelete }: ProjectCardProps) {
       aria-label={t("projectcard.openProject") + ": " + project.name}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="nf-card-sheen nf-hover-float group relative bg-nf-bg-card backdrop-blur-none border border-nf-border-light hover:border-fandex-primary/50 cursor-pointer flex overflow-hidden focus:outline-none focus:ring-1 focus:ring-fandex-primary focus:ring-inset hover:shadow-lg hover:shadow-black/25"
+      className="nf-card-sheen nf-hover-float group relative bg-nf-bg-card backdrop-blur-none border border-nf-border-light hover:border-fandex-primary/50 cursor-pointer flex overflow-hidden focus:outline-none focus:ring-1 focus:ring-fandex-primary focus:ring-inset hover:shadow-xl hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-base"
       style={{ backgroundColor: 'var(--fandex-bg-card)' }}
     >
+      {/* 背景装饰图案:不占位,绝对定位右下角,低透明度,不影响文字排版 */}
+      <svg
+        className="absolute bottom-0 right-0 w-32 h-32 opacity-[0.04] pointer-events-none group-hover:opacity-[0.08] transition-opacity duration-500"
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        {/* 装饰性羽毛笔图案,呼应品牌主题 */}
+        <path
+          d="M20 80 L70 30 M70 30 Q80 20 75 15 Q70 10 60 20 L70 30 Z M65 35 L75 25 M60 40 L70 30 M55 45 L65 35 M50 50 L60 40 M45 55 L55 45 M40 60 L50 50 M35 65 L45 55 M30 70 L40 60 M25 75 L35 65"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          className="text-fandex-primary"
+        />
+        {/* 装饰圆点 */}
+        <circle cx="78" cy="22" r="2" className="text-fandex-secondary" fill="currentColor" />
+        <circle cx="85" cy="15" r="1.5" className="text-fandex-tertiary" fill="currentColor" />
+      </svg>
+
       {/* 左侧渐变色条 - 加宽并增加光晕 */}
       <div className={`relative w-2 flex-shrink-0 bg-gradient-to-b ${project.gradient}`}>
         <div className="absolute inset-0 opacity-50" style={{
@@ -147,20 +170,25 @@ function ProjectCardImpl({ project, projectInfo, onDelete }: ProjectCardProps) {
           </p>
         )}
 
-        {/* 作者与题材行:两者皆空时隐藏 */}
-        {(project.author || project.genre) && (
-          <div className="flex items-center gap-2 text-[11px] text-nf-text-tertiary/80">
+        {/* 作者/题材/创建时间信息行:三者皆空时隐藏,使用图标增强可读性 */}
+        {(project.author || project.genre || project.createdAt) && (
+          <div className="flex items-center gap-3 text-[11px] text-nf-text-tertiary/80 flex-wrap">
             {project.author && (
-              <span className="truncate">
-                {t("projectcard.authorLabel")}: {project.author}
+              <span className="flex items-center gap-1 truncate" title={`${t("projectcard.authorLabel")}: ${project.author}`}>
+                <User className="w-3 h-3 flex-shrink-0 text-nf-text-tertiary/60" />
+                <span className="truncate">{project.author}</span>
               </span>
             )}
-            {project.author && project.genre && (
-              <span className="text-nf-text-tertiary/40">·</span>
-            )}
             {project.genre && (
-              <span className="truncate">
-                {t("projectcard.genreLabel")}: {project.genre}
+              <span className="flex items-center gap-1 truncate" title={`${t("projectcard.genreLabel")}: ${project.genre}`}>
+                <Tag className="w-3 h-3 flex-shrink-0 text-nf-text-tertiary/60" />
+                <span className="truncate">{project.genre}</span>
+              </span>
+            )}
+            {project.createdAt && (
+              <span className="flex items-center gap-1 whitespace-nowrap" title={`${t("projectcard.createdLabel")}: ${project.createdAt}`}>
+                <Calendar className="w-3 h-3 flex-shrink-0 text-nf-text-tertiary/60" />
+                <span>{project.createdAt}</span>
               </span>
             )}
           </div>

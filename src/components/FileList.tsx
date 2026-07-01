@@ -283,7 +283,13 @@ function TreeNodeList({
       )}
       {!isDraggable && <span className="w-3.5 flex-shrink-0" />}
       <FileText className="w-4 h-4 flex-shrink-0" />
-      <span className="flex-1 text-sm truncate">
+      {/* 章节名称:允许换行完整显示,避免 truncate 导致名称截断 */}
+      <span
+        className="flex-1 text-sm break-all leading-snug"
+        title={isManuscript
+          ? formatManuscriptTitle(node.name, chapterFormat, autoNumbering)
+          : getDisplayTitle(node.name)}
+      >
         {isManuscript
           ? formatManuscriptTitle(node.name, chapterFormat, autoNumbering)
           : getDisplayTitle(node.name)}

@@ -334,6 +334,25 @@ export default function Launcher() {
     return t("launcher.yearsAgo", { n: years });
   }, [t]);
 
+  /**
+   * 格式化创建时间为 YYYY-MM-DD 简洁日期格式
+   * 输入: ISO 8601 时间字符串
+   * 输出: YYYY-MM-DD 格式字符串,解析失败时返回空字符串
+   */
+  const formatCreatedDate = useCallback((ts: string) => {
+    if (!ts) return "";
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    } catch {
+      return "";
+    }
+  }, []);
+
   const toProjectData = useCallback((p: ProjectInfo): ProjectData => {
     const typeI18nMap: Record<string, string> = {
       epic: t("launcher.typeEpic"),
@@ -411,8 +430,10 @@ export default function Launcher() {
       author: p.meta.author || "",
       description: p.meta.description || "",
       genre: p.meta.genre || "",
+      // 创建时间格式化为 YYYY-MM-DD 供卡片展示
+      createdAt: formatCreatedDate(p.meta.created_at),
     };
-  }, [t, formatWordCount, formatTimeAgo]);
+  }, [t, formatWordCount, formatTimeAgo, formatCreatedDate]);
 
   const handleCreateSuccess = useCallback(async (projectPath: string) => {
     setShowCreateDialog(false);
@@ -493,15 +514,20 @@ export default function Launcher() {
           background: 'linear-gradient(90deg, var(--fandex-primary), var(--fandex-secondary), var(--fandex-tertiary))',
         }} />
 
-        {/* 品牌区域 */}
+        {/* 品牌区域 - 入口按钮(点击展开创建面板) + 小点装饰 */}
         <div className="px-6 pt-8 pb-6">
           <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="p-2 bg-fandex-primary/10 rounded-md">
+            {/* 品牌图标容器:右上角小点装饰 */}
+            <div className="relative p-2 bg-fandex-primary/10 rounded-md">
               <PenLine className="w-5 h-5 text-fandex-primary" />
+              {/* 小点装饰图案:不占位,绝对定位右上角 */}
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-fandex-secondary" />
+              <span className="absolute -top-0.5 -right-2.5 w-1 h-1 rounded-full bg-fandex-tertiary/70" />
             </div>
             <div>
+              {/* 品牌名改为拼音,避免中文显示导致路径编码问题 */}
               <h1 className="text-lg font-bold font-display text-nf-text tracking-tight">
-                {t("launcher.title")}
+                MiaoChuangShuo
               </h1>
               <p className="text-[10px] text-nf-text-tertiary">
                 {t("launcher.subtitle")}
@@ -518,7 +544,8 @@ export default function Launcher() {
           >
             <BookOpen className="w-4 h-4" />
             {t("launcher.createNew")}
-            <ArrowRight className="w-3.5 h-3.5 ml-auto transition-transform duration-fast group-hover:translate-x-0.5" />
+            {/* 箭头:展开时旋转 90 度朝下,悬停时额外右移,增强方向感 */}
+            <ArrowRight className={`w-3.5 h-3.5 ml-auto transition-transform duration-base ease-fandex group-hover:translate-x-0.5 ${typePanelExpanded ? 'rotate-90' : ''}`} />
           </button>
 
           {/* 文体类型选择面板 - 展开式 */}
@@ -557,9 +584,6 @@ export default function Launcher() {
                           {tpl.desc}
                         </div>
                       </div>
-                      <span className="text-nf-text-tertiary opacity-0 group-hover:opacity-100 transition-all duration-fast text-sm font-bold mt-0.5 group-hover:rotate-90">
-                        &gt;
-                      </span>
                     </button>
                   );
                 })}
@@ -585,9 +609,6 @@ export default function Launcher() {
                         {tpl.description || tpl.directories.join("、")}
                       </div>
                     </div>
-                    <span className="text-nf-text-tertiary opacity-0 group-hover:opacity-100 transition-all duration-fast text-sm font-bold mt-0.5 group-hover:rotate-90">
-                      &gt;
-                    </span>
                   </button>
                 ))}
 
@@ -753,16 +774,10 @@ export default function Launcher() {
               <p className="text-nf-text-secondary font-medium text-base mb-2">
                 {t("launcher.noProjects")}
               </p>
+              {/* 文本提示:引导用户使用左侧创建按钮,不再放置冗余按钮 */}
               <p className="text-sm text-nf-text-tertiary max-w-sm">
                 {t("launcher.welcomeHint")}
               </p>
-              <button
-                onClick={handleNewProjectClick}
-                className="mt-6 flex items-center gap-2 px-5 py-2.5 bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse font-medium text-sm transition-all duration-base ease-fandex shadow-sm hover:shadow-md"
-              >
-                <BookOpen className="w-4 h-4" />
-                {t("launcher.createNew")}
-              </button>
             </div>
           ) : isSearching && !hasSearchResults ? (
             <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
@@ -798,11 +813,12 @@ export default function Launcher() {
         </div>
       </main>
 
-      {/* 创建项目对话框 - 传入预选类型或自定义模板 */}
+      {/* 创建项目对话框 - 传入预选类型或自定义模板,以及扫描目录作为默认存储路径 */}
       {showCreateDialog && (
         <CreateProjectDialog
           defaultType={selectedType}
           customTemplate={selectedCustomTemplate}
+          defaultPath={scanDir}
           onClose={() => { setShowCreateDialog(false); setSelectedCustomTemplate(null); }}
           onSuccess={handleCreateSuccess}
         />

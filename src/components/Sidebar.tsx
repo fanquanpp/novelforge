@@ -401,36 +401,38 @@ export default function Sidebar({ onCreateFile, onOpenSettings, onSwitchCategory
         })}
       </div>
 
-      {/* 底部: 主题切换、设置与新建文件按钮 - FANDEX 直角 */}
-      <div className="px-2 py-2 border-t border-nf-border-light space-y-1">
-        {/* 折叠态:按钮垂直排列仅显示图标;展开态:主题与设置横向并排 */}
-        <div className={`flex ${collapsed ? "flex-col gap-1" : "gap-1"}`}>
+      {/* 底部: 主题切换、设置与新建文件按钮 - 统一大小,协调布局 */}
+      <div className="px-2 py-2 border-t border-nf-border-light space-y-1.5">
+        {/* 第一行:主题切换 + 设置按钮,等宽并排,折叠时仅图标 */}
+        <div className={`flex gap-1.5 ${collapsed ? "flex-col" : ""}`}>
           <button
             onClick={toggleTheme}
             title={theme === "dark" ? t("sidebar.switchLight") : t("sidebar.switchDark")}
-            className={`${collapsed ? "w-full" : "flex-1"} flex items-center justify-center gap-1.5 py-1.5 text-xs text-nf-text-secondary hover:text-fandex-tertiary border border-nf-border-light hover:border-fandex-tertiary/60 hover:bg-nf-bg-hover transition-all duration-base ease-fandex`}
+            className={`flex items-center justify-center gap-1.5 py-2 text-xs text-nf-text-secondary hover:text-fandex-tertiary border border-nf-border-light hover:border-fandex-tertiary/60 hover:bg-nf-bg-hover transition-all duration-base ease-fandex ${collapsed ? "w-full" : "flex-1"}`}
           >
             {theme === "dark" ? (
-              <Sun className="w-3.5 h-3.5 transition-transform duration-fast hover:rotate-45" />
+              <Sun className="w-4 h-4 transition-transform duration-fast hover:rotate-45" />
             ) : (
-              <Moon className="w-3.5 h-3.5" />
+              <Moon className="w-4 h-4" />
             )}
             {!collapsed && (theme === "dark" ? t("sidebar.light") : t("sidebar.dark"))}
           </button>
           <button
             onClick={onOpenSettings}
             title={t("sidebar.settings")}
-            className={`${collapsed ? "w-full" : ""} flex items-center justify-center gap-1 px-2 py-1.5 text-xs text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/60 hover:bg-nf-bg-hover transition-all duration-base ease-fandex`}
+            className={`flex items-center justify-center gap-1.5 py-2 text-xs text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/60 hover:bg-nf-bg-hover transition-all duration-base ease-fandex ${collapsed ? "w-full" : "flex-1"}`}
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-4 h-4" />
+            {!collapsed && t("sidebar.settings")}
           </button>
         </div>
+        {/* 第二行:新建文件按钮,独占一行,主色高亮 */}
         <button
           onClick={onCreateFile}
           title={t("sidebar.newFile")}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/60 hover:bg-fandex-primary/5 transition-all duration-base ease-fandex"
+          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/60 hover:bg-fandex-primary/5 transition-all duration-base ease-fandex"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-4 h-4" />
           {!collapsed && t("sidebar.newFile")}
         </button>
       </div>

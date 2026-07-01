@@ -22,6 +22,8 @@ import { useSettingsStore } from "../lib/settingsStore";
 interface CreateProjectDialogProps {
   defaultType?: ProjectType;
   customTemplate?: CustomTemplate | null;
+  /** 默认存储路径(通常为主页扫描目录),传入后自动填充,用户无需手动选择 */
+  defaultPath?: string;
   onClose: () => void;
   onSuccess: (projectPath: string) => void;
 }
@@ -30,6 +32,7 @@ interface CreateProjectDialogProps {
 export default function CreateProjectDialog({
   defaultType = "standard",
   customTemplate = null,
+  defaultPath = "",
   onClose,
   onSuccess,
 }: CreateProjectDialogProps) {
@@ -39,8 +42,8 @@ export default function CreateProjectDialog({
   const [genre, setGenre] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
-  // 初始值从 settingsStore 读取上次使用的目录,实现目录记忆
-  const [parentPath, setParentPath] = useState(() => useSettingsStore.getState().lastProjectPath);
+  // 初始值优先使用主页传入的扫描目录,其次从 settingsStore 读取上次使用的目录
+  const [parentPath, setParentPath] = useState(() => defaultPath || useSettingsStore.getState().lastProjectPath);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [showTypeSelector, setShowTypeSelector] = useState(false);
