@@ -310,49 +310,39 @@ select:focus-visible {
   text-rendering: optimizeLegibility;
 }
 
-/* h1: 左侧 3px 竖线 + 底部边框 */
+/* ========== 标题样式：纯文本风格，仅字号字重差异，无任何块级装饰 ========== */
 .ProseMirror h1 {
   font-size: 1.7em;
   font-weight: 700;
-  line-height: 1.35;
-  margin: 0.8em 0 0.4em;
-  padding-left: 12px;
-  border-left: 3px solid var(--fandex-primary);
-  border-bottom: 1px solid var(--fandex-border-light);
-  padding-bottom: 0.3em;
+  line-height: 1.4;
+  margin: 0.9em 0 0.4em;
   color: var(--fandex-text);
   scroll-margin-top: calc(var(--fandex-nav-height) + 24px);
 }
 
-/* h2: 底部 2px 彩色边框(secondary) */
 .ProseMirror h2 {
-  font-size: 1.35em;
+  font-size: 1.4em;
   font-weight: 700;
-  line-height: 1.35;
-  margin: 0.6em 0 0.3em;
-  border-bottom: 2px solid var(--fandex-secondary);
-  padding-bottom: 0.2em;
+  line-height: 1.4;
+  margin: 0.7em 0 0.3em;
   color: var(--fandex-text);
   scroll-margin-top: calc(var(--fandex-nav-height) + 24px);
 }
 
-/* h3: 左侧 3px 竖线(tertiary) */
 .ProseMirror h3 {
-  font-size: 1.15em;
+  font-size: 1.18em;
   font-weight: 700;
-  line-height: 1.35;
-  margin: 0.5em 0 0.2em;
-  padding-left: 12px;
-  border-left: 3px solid var(--fandex-tertiary);
-  color: var(--fandex-text-secondary);
+  line-height: 1.4;
+  margin: 0.55em 0 0.25em;
+  color: var(--fandex-text);
   scroll-margin-top: calc(var(--fandex-nav-height) + 24px);
 }
 
 .ProseMirror h4 {
   font-size: 1.05em;
   font-weight: 700;
-  margin: 0.4em 0 0.2em;
-  border-bottom: 1px solid var(--fandex-border-light);
+  line-height: 1.4;
+  margin: 0.45em 0 0.2em;
   color: var(--fandex-text);
 }
 
@@ -380,12 +370,9 @@ select:focus-visible {
   margin-left: -1px;
 }
 
-/* 引用块: 左侧 3px primary 色边框 + 卡片背景 */
+/* 引用块：纯文本风格，仅左侧缩进 + 斜体（无边框、无背景、无圆角） */
 .ProseMirror blockquote {
-  border-left: 3px solid var(--fandex-primary);
-  padding: 0.5em 1em;
-  margin: 0.8em 0;
-  background: var(--fandex-bg-card);
+  margin: 0.8em 0 0.8em 1.5em;
   color: var(--fandex-text-secondary);
   font-style: italic;
 }
@@ -462,33 +449,27 @@ select:focus-visible {
   text-decoration-color: var(--fandex-primary);
 }
 
-/* 行内代码: bg-code + 1px 边框 + 3px 圆角 */
+/* 行内代码：纯文本风格，仅等宽字体（无背景、无边框、无圆角） */
 .ProseMirror code {
-  background: var(--fandex-bg-code);
-  border: 1px solid var(--fandex-border-light);
-  padding: 0.1em 0.3em;
-  border-radius: 3px;
   font-family: var(--fandex-font-code);
-  font-size: 0.875em;
+  font-size: 0.9em;
+  color: var(--fandex-text-secondary);
 }
 
-/* 代码块: 1px 边框 + 4px 圆角 */
+/* 代码块：纯文本风格，仅等宽字体 + 左侧缩进（无背景、无边框、无圆角） */
 .ProseMirror pre {
-  background: var(--fandex-bg-code);
-  border: 1px solid var(--fandex-border);
-  padding: 1.25em 1em;
-  border-radius: 4px;
-  margin: 0.8em 0;
+  margin: 0.8em 0 0.8em 1.5em;
   overflow-x: auto;
-  font-size: 0.875em;
+  font-family: var(--fandex-font-code);
+  font-size: 0.9em;
   line-height: 1.6;
+  color: var(--fandex-text-secondary);
 }
 
 .ProseMirror pre code {
-  background: transparent;
-  border: none;
-  padding: 0;
+  font-family: inherit;
   font-size: 1em;
+  color: inherit;
 }
 
 /* 占位符样式 */
@@ -504,137 +485,40 @@ select:focus-visible {
   outline: none;
 }
 
-/* ========== 当前段落高亮（VSCode 风格当前行高亮） ========== */
+/* ========== 当前段落高亮：纯文本风格，仅极轻微文字色变化（无背景、无边框） ========== */
 .ProseMirror p.current-paragraph {
-  background: rgba(124, 158, 255, 0.06);
-  border-left: 2px solid var(--fandex-primary);
-  padding-left: 0.75em;
-  margin-left: -0.85em;
-  border-radius: 2px;
-  transition: background 0.15s ease-out, border-color 0.15s ease-out;
+  color: var(--fandex-text);
+  transition: color 0.15s ease-out;
 }
 
 /* 亮色主题下的当前段落高亮 */
 .light .ProseMirror p.current-paragraph {
-  background: rgba(68, 102, 221, 0.08);
+  color: var(--fandex-text);
 }
 
-/* ========== 诗歌/歌词排版样式 ========== */
-.ProseMirror .poetry-block {
-  text-align: center;
-  line-height: 2.4;
-  margin: 1em 0;
-  padding: 1em 1.5em;
+/* ========== 诗歌/歌词行内排版样式 ==========
+ * 设计原则：纯文本视觉表现，仅改变文字本身属性
+ * 不包含任何块级装饰（无边框、无背景色、无圆角、无 padding/margin）
+ * 类似 Word 中给文字加斜体/字间距，不会在文字背景生成特殊边框和颜色
+ */
+
+/* 诗歌行内样式：斜体 + 字间距加大（纯文字属性，无块级装饰） */
+.ProseMirror .nf-poetry-text {
   font-style: italic;
-  color: var(--fandex-text-secondary);
-  background: var(--fandex-bg-code);
-  border: 1px solid var(--fandex-border-light);
-  border-radius: 4px;
+  letter-spacing: 0.1em;
+}
+
+/* 歌词行内样式：字间距 + 字重轻微加重（纯文字属性，无块级装饰） */
+.ProseMirror .nf-lyrics-text {
   letter-spacing: 0.05em;
-}
-
-.ProseMirror .poetry-block p {
-  margin: 0.2em 0;
-}
-
-.ProseMirror .lyrics-block {
-  text-align: left;
-  line-height: 2;
-  margin: 0.8em 0;
-  padding: 0.8em 1.2em;
-  padding-left: 2em;
-  border-left: 3px solid var(--fandex-secondary);
-  color: var(--fandex-text-secondary);
-  background: linear-gradient(to right, var(--fandex-bg-code), transparent);
-  border-radius: 0 4px 4px 0;
-}
-
-.ProseMirror .lyrics-block p {
-  margin: 0.15em 0;
-}
-
-.ProseMirror .lyrics-block + .lyrics-block {
-  margin-top: 1em;
+  font-weight: 500;
 }
 
 /* ========== Office 级富文本元素样式 ========== */
 
-/* 表格 .nf-table：Office 风格表格（带表头、单元格边框、悬浮高亮）
- * 扩展配置：Table.configure({ HTMLAttributes: { class: "nf-table" } })
- */
-.ProseMirror .nf-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1em 0;
-  overflow: hidden;
-  background: var(--fandex-bg-card);
-  border: 1px solid var(--fandex-border);
-  font-size: 0.95em;
-}
+/* 注：表格功能已移除，相关 .nf-table 样式全部删除 */
 
-.ProseMirror .nf-table th,
-.ProseMirror .nf-table td {
-  border: 1px solid var(--fandex-border-light);
-  padding: 0.5em 0.75em;
-  vertical-align: top;
-  min-width: 80px;
-}
-
-/* 表头：主色底 + 反色文字 */
-.ProseMirror .nf-table th {
-  background: var(--fandex-bg-hover);
-  color: var(--fandex-text);
-  font-weight: 700;
-  text-align: left;
-  border-bottom: 2px solid var(--fandex-primary);
-}
-
-/* 行悬浮：浅主色背景 */
-.ProseMirror .nf-table tbody tr:hover {
-  background: rgba(124, 158, 255, 0.06);
-}
-
-/* 亮色主题下行悬浮 */
-.light .ProseMirror .nf-table tbody tr:hover {
-  background: rgba(68, 102, 221, 0.06);
-}
-
-/* 选中单元格：主色边框 */
-.ProseMirror .nf-table .selectedCell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(124, 158, 255, 0.1);
-  pointer-events: none;
-}
-
-/* 表格列宽调整手柄（resizable） */
-.ProseMirror .nf-table .column-resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--fandex-primary);
-  opacity: 0;
-  cursor: col-resize;
-  transition: opacity 0.15s ease;
-}
-
-.ProseMirror .nf-table:hover .column-resize-handle {
-  opacity: 0.5;
-}
-
-.ProseMirror .nf-table .column-resize-handle:hover {
-  opacity: 1;
-}
-
-/* 表格处于调整列宽状态时的光标 */
-.ProseMirror .nf-table.resizing {
-  cursor: col-resize;
-}
-
-/* 链接 .nf-link：主色 + 下划线 + 悬浮高亮 */
+/* 链接 .nf-link：主色 + 下划线（纯文本风格，无背景无边框） */
 .ProseMirror .nf-link {
   color: var(--fandex-primary);
   text-decoration: underline;
@@ -654,12 +538,10 @@ select:focus-visible {
   cursor: pointer;
 }
 
-/* 高亮标记 mark：默认荧光黄 + 多色支持 */
+/* 高亮标记 mark：荧光笔效果（类似 Word 荧光笔，属于文字本身属性，非块级装饰） */
 .ProseMirror mark {
   background: #fff59d;
   color: inherit;
-  padding: 0.05em 0.15em;
-  border-radius: 2px;
   transition: background 0.15s ease;
 }
 
@@ -743,34 +625,11 @@ select:focus-visible {
   margin: 0;
 }
 
-/* 水平分割线 hr：FANDEX 风格渐变分割 */
+/* 水平分割线 hr：纯文本风格，单线，无渐变无圆点装饰 */
 .ProseMirror hr {
   border: none;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--fandex-border-light) 20%,
-    var(--fandex-border) 50%,
-    var(--fandex-border-light) 80%,
-    transparent
-  );
-  margin: 2em 0;
-  position: relative;
-}
-
-/* hr 居中点缀主色圆点 */
-.ProseMirror hr::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--fandex-primary);
-  opacity: 0.6;
+  border-top: 1px solid var(--fandex-border-light);
+  margin: 1.5em 0;
 }
 
 /* 下标 sub / 上标 sup：Office 标准字号 */

@@ -420,8 +420,10 @@ export default function Workspace() {
       </div>
 
       {/* 右侧文件列表：常驻固定面板，不再随聚焦模式或分类切换隐藏，
-          保证布局稳定，避免"活动状态"导致的布局抖动 */}
-      {!focusMode && (
+          保证布局稳定，避免"活动状态"导致的布局抖动。
+          例外：codex（设定库）分类下，CodexPanel 自身已内嵌右侧实体列表，
+          若同时显示 FileList 会造成右侧双栏堆叠，故此处隐藏 */}
+      {!focusMode && activeCategory !== "codex" && (
         <div className="relative z-10 flex flex-shrink-0">
           <FileList onCreateFile={handleNewFileRequest} onSelectFile={handleSelectFile} />
         </div>

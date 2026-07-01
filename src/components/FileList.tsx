@@ -57,7 +57,23 @@ function formatSize(bytes: number): string {
 }
 
 // 从文件名中提取章节序号，用于正文文件自动排序
+// 排序规则：
+//   - 序章/楔子/引子/前言/引言 → 排在最前面（返回 -2）
+//   - 正文章节（第N章/Chapter N/N.标题） → 按序号升序
+//   - 续章/尾声/后记/番外/终章 → 排在最后（返回 Infinity）
 function extractChapterNumber(name: string): number {
+  // 去除扩展名后的小写基准名，用于关键词匹配
+  const base = name.replace(/\.txt$/i, "").trim().toLowerCase();
+  // 序章类前置于所有章节之前
+  const prologueKeywords = ["序章", "楔子", "引子", "前言", "引言", "prologue", "preface"];
+  if (prologueKeywords.some((kw) => base === kw || base.startsWith(kw))) {
+    return -2;
+  }
+  // 续章/尾声/后记/番外/终章 排在所有正文章节之后
+  const epilogueKeywords = ["续章", "尾声", "后记", "番外", "终章", "epilogue", "afterword"];
+  if (epilogueKeywords.some((kw) => base === kw || base.startsWith(kw))) {
+    return Infinity;
+  }
   const patterns = [
     /第(\d+)章/,
     /第(\d+)节/,
@@ -69,7 +85,7 @@ function extractChapterNumber(name: string): number {
     const m = name.match(p);
     if (m) return parseInt(m[1], 10);
   }
-  return Infinity; // non-chapter files sort last
+  return Infinity; // 非章节文件排在最后
 }
 
 // 从文件名中去除编号前缀，保留纯名称
@@ -201,8 +217,8 @@ function TreeNodeList({
     return (
       <div>
         <div
-          className="group flex items-center gap-2 px-3 py-2 cursor-pointer transition duration-fast border border-transparent hover:bg-nf-bg-hover hover:text-nf-text text-nf-text-secondary"
-          style={{ paddingLeft: `${12 + depth * 16}px` }}
+          className="group flex items-center gap-1.5 pr-2 py-1.5 cursor-pointer transition duration-fast border border-transparent hover:bg-nf-bg-hover hover:text-nf-text text-nf-text-secondary"
+          style={{ paddingLeft: `${8 + depth * 12}px` }}
           onClick={() => hasChildren && setExpanded(!expanded)}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(node, e); }}
         >
@@ -258,17 +274,20 @@ function TreeNodeList({
 
   // 文件节点
   const isSelected = selectedPath === node.relative_path;
+  const displayTitle = isManuscript
+    ? formatManuscriptTitle(node.name, chapterFormat, autoNumbering)
+    : getDisplayTitle(node.name);
   return (
     <div
       onClick={() => onSelect(node)}
       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(node, e); }}
-      style={{ paddingLeft: `${12 + depth * 16}px` }}
+      style={{ paddingLeft: `${8 + depth * 12}px` }}
       draggable={isDraggable}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`group flex items-center gap-2 px-3 py-2 cursor-pointer transition duration-fast border ${
+      className={`group relative flex items-center gap-1.5 pr-2 py-1.5 cursor-pointer transition duration-fast border ${
         isDragging
           ? "opacity-40 border-fandex-primary/40"
           : isDragOver
@@ -281,39 +300,38 @@ function TreeNodeList({
       {isDraggable && (
         <GripVertical className="w-3.5 h-3.5 flex-shrink-0 text-nf-text-tertiary opacity-0 group-hover:opacity-60 cursor-grab" />
       )}
-      {!isDraggable && <span className="w-3.5 flex-shrink-0" />}
+      {!isDraggable && <span className="w-3 flex-shrink-0" />}
       <FileText className="w-4 h-4 flex-shrink-0" />
-      {/* 章节名称:允许换行完整显示,避免 truncate 导致名称截断 */}
+      {/* 章节名称:单行显示,超出用省略号截断,释放横向空间给文件名 */}
       <span
-        className="flex-1 text-sm break-all leading-snug"
-        title={isManuscript
-          ? formatManuscriptTitle(node.name, chapterFormat, autoNumbering)
-          : getDisplayTitle(node.name)}
+        className="flex-1 min-w-0 text-sm truncate leading-snug"
+        title={displayTitle}
       >
-        {isManuscript
-          ? formatManuscriptTitle(node.name, chapterFormat, autoNumbering)
-          : getDisplayTitle(node.name)}
+        {displayTitle}
       </span>
-      <span className="text-xs text-nf-text-tertiary whitespace-nowrap">
-        {formatSize(node.size)}
-        {isSelected && activeFileWordCount !== undefined && activeFileWordCount > 0 && (
-          <span className="ml-1.5 text-fandex-primary">
-            {t("filelist.wordCount", { count: activeFileWordCount })}
-          </span>
-        )}
-      </span>
-      <button
-        onClick={(e) => onRename(node, e)}
-        className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto p-1 text-nf-text-tertiary hover:text-fandex-primary transition duration-fast"
-      >
-        <PenLine className="w-3.5 h-3.5" />
-      </button>
-      <button
-        onClick={(e) => onDelete(node, e)}
-        className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto p-1 text-nf-text-tertiary hover:text-red-400 transition duration-fast"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
+      {/* 右侧悬浮层:尺寸+操作按钮,默认隐藏,悬浮时覆盖显示,避免占用文件名横向空间 */}
+      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity duration-fast bg-nf-bg/85 backdrop-blur-sm pl-3">
+        <span className="text-[10px] text-nf-text-tertiary whitespace-nowrap">
+          {formatSize(node.size)}
+          {isSelected && activeFileWordCount !== undefined && activeFileWordCount > 0 && (
+            <span className="ml-1 text-fandex-primary">
+              {t("filelist.wordCount", { count: activeFileWordCount })}
+            </span>
+          )}
+        </span>
+        <button
+          onClick={(e) => onRename(node, e)}
+          className="p-1 text-nf-text-tertiary hover:text-fandex-primary transition duration-fast"
+        >
+          <PenLine className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => onDelete(node, e)}
+          className="p-1 text-nf-text-tertiary hover:text-red-400 transition duration-fast"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -837,9 +855,15 @@ export default function FileList({ onCreateFile, onSelectFile }: FileListProps) 
       <div className="px-4 py-3 border-b border-nf-border-light">
         {/* 第一行:目录名 + 视图切换 */}
         <div className="flex items-center justify-between mb-2">
-          <h2 className="fandex-bar-left text-sm font-bold font-display text-nf-text">
-            {dirName}
-          </h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="fandex-bar-left text-sm font-bold font-display text-nf-text flex-shrink-0">
+              {dirName}
+            </h2>
+            {/* 新建入口提示:新建按钮在最左侧侧边栏底部,此处提示用户创建入口位置 */}
+            <span className="text-[10px] text-nf-text-tertiary/70 truncate">
+              {t("filelist.createHint")}
+            </span>
+          </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => setViewMode("grid")}

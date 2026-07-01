@@ -103,7 +103,7 @@ export default function Launcher() {
   const [selectedType, setSelectedType] = useState<ProjectType>("standard");
   const [typePanelExpanded, setTypePanelExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [appVersion, setAppVersion] = useState("26.7.3");
+  const [appVersion, setAppVersion] = useState("26.7.4");
   const [deleteTarget, setDeleteTarget] = useState<ProjectInfo | null>(null);
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
   const [showTemplateManager, setShowTemplateManager] = useState(false);

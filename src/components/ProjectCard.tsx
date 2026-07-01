@@ -181,12 +181,14 @@ function ProjectCardImpl({ project, projectInfo, onDelete }: ProjectCardProps) {
           )}
         </div>
 
-        {/* 描述行:有描述时显示,最多两行,无描述时隐藏节省垂直空间 */}
-        {project.description && (
-          <p className="text-xs text-nf-text-tertiary line-clamp-2 leading-relaxed">
-            {project.description}
-          </p>
-        )}
+        {/* 描述行:始终保留单行高度以保证卡片高度一致
+         * 有描述时单行显示并截断(省略号),无描述时占位空白 */}
+        <p
+          className="text-xs text-nf-text-tertiary leading-relaxed truncate min-h-[1.25rem]"
+          title={project.description || ""}
+        >
+          {project.description || "\u00A0"}
+        </p>
 
         {/* 作者/题材/创建时间信息行:三者皆空时隐藏,使用图标增强可读性 */}
         {(project.author || project.genre || project.createdAt) && (

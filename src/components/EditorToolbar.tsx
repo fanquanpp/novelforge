@@ -30,7 +30,6 @@ import {
   Music,
   Pilcrow,
   ListTree,
-  Square,
   Eye,
   Pause,
   Play,
@@ -45,16 +44,15 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
-  Table as TableIcon,
   Minus,
   Search,
   ChevronDown,
-  Plus,
-  Trash2,
   Sparkles,
-  BookOpen,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { useI18n } from "../lib/i18n";
+import { useSettingsStore } from "../lib/settingsStore";
 import ConfirmDialog from "./ConfirmDialog";
 
 // 工具栏按钮属性
@@ -65,8 +63,9 @@ interface ToolbarButtonProps {
   children: React.ReactNode;
 }
 
-// 工具栏按钮 - FANDEX 直角风格（增强版）
+// 工具栏按钮 - 紧凑纯文本风格
 // 关键设计：tabIndex={-1} 防止 Tab 键焦点跳到工具栏按钮，保证写作时焦点常驻编辑器
+// 视觉风格：极简记事本风格，激活态仅文字变色，无底部指示线、无背景块
 export function ToolbarButton({
   onClick,
   active,
@@ -79,26 +78,22 @@ export function ToolbarButton({
       onClick={onClick}
       title={title}
       tabIndex={-1}
-      className={`nf-tool-btn relative p-1.5 ease-fandex border group ${
+      className={`nf-tool-btn relative p-1 ease-fandex border border-transparent group ${
         active
-          ? "bg-fandex-primary/10 text-fandex-primary border-fandex-primary/40"
-          : "text-nf-text-tertiary hover:text-nf-text hover:bg-nf-bg-hover border-transparent hover:border-nf-border-light"
+          ? "text-fandex-primary"
+          : "text-nf-text-tertiary hover:text-nf-text hover:bg-nf-bg-hover"
       }`}
     >
-      <span className="transition-transform duration-fast group-hover:scale-110 group-active:scale-95 block">
+      <span className="transition-transform duration-fast group-active:scale-95 block">
         {children}
       </span>
-      {/* 激活态底部指示线 */}
-      {active && (
-        <span className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-fandex-primary" />
-      )}
     </button>
   );
 }
 
-// 分隔符 - 增加渐变效果,视觉更柔和
+// 分隔符 - 纯单线，紧凑记事本风格
 export function Divider() {
-  return <div className="w-px h-4 bg-gradient-to-b from-transparent via-nf-border-light to-transparent mx-1.5" />;
+  return <div className="w-px h-3.5 bg-nf-border-light/50 mx-1" />;
 }
 
 // 注：COLOR_PRESETS 和 HIGHLIGHT_PRESETS 已移至 EditorBubbleMenu 组件
@@ -148,10 +143,10 @@ function Dropdown({ trigger, children, panelWidth = "w-56", active = false, titl
         onClick={() => setOpen((prev) => !prev)}
         title={title}
         tabIndex={-1}
-        className={`relative p-1.5 transition-all duration-base ease-fandex border flex items-center gap-0.5 ${
+        className={`relative p-1 transition-all duration-base ease-fandex border border-transparent flex items-center gap-0.5 ${
           active || open
-            ? "bg-fandex-primary/10 text-fandex-primary border-fandex-primary/40"
-            : "text-nf-text-tertiary hover:text-nf-text hover:bg-nf-bg-hover border-transparent hover:border-nf-border-light"
+            ? "text-fandex-primary"
+            : "text-nf-text-tertiary hover:text-nf-text hover:bg-nf-bg-hover"
         }`}
       >
         {trigger}
@@ -249,68 +244,67 @@ function HeadingDropdown({ editor }: HeadingDropdownProps) {
 
 // 注：ColorPicker 已移至 EditorBubbleMenu 组件，此处不再保留
 
-// 表格菜单属性
-interface TableMenuProps {
-  editor: Editor | null;
-}
-
-/**
- * 表格操作下拉菜单（插入表格/添加行列/删除表格）
- * 输入: editor 编辑器实例
- * 输出: JSX 表格操作下拉
- * 流程:
- *   1. 不在表格内时仅显示"插入表格"
- *   2. 在表格内时显示添加行/列、删除行/列、删除表格
- */
-function TableMenu({ editor }: TableMenuProps) {
-  const { t } = useI18n();
-  if (!editor) return null;
-
-  const isInTable = editor.isActive("table");
-
-  const handleInsertTable = () => {
-    // 插入 3x3 默认表格
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-  };
-
-  const menuItems: Array<{ label: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean }> = [
-    { label: t("editor.insertTable"), icon: <TableIcon className="w-3.5 h-3.5" />, onClick: handleInsertTable },
-    { label: t("editor.addRowAfter"), icon: <Plus className="w-3.5 h-3.5" />, onClick: () => editor.chain().focus().addRowAfter().run(), disabled: !isInTable },
-    { label: t("editor.addColumnAfter"), icon: <Plus className="w-3.5 h-3.5" />, onClick: () => editor.chain().focus().addColumnAfter().run(), disabled: !isInTable },
-    { label: t("editor.deleteRow"), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => editor.chain().focus().deleteRow().run(), disabled: !isInTable, danger: true },
-    { label: t("editor.deleteColumn"), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => editor.chain().focus().deleteColumn().run(), disabled: !isInTable, danger: true },
-    { label: t("editor.deleteTable"), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => editor.chain().focus().deleteTable().run(), disabled: !isInTable, danger: true },
-  ];
-
-  return (
-    <Dropdown
-      trigger={<TableIcon className="w-4 h-4" />}
-      active={isInTable}
-      title={t("editor.table")}
-      panelWidth="w-48"
-    >
-      <div className="py-1">
-        {menuItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={item.onClick}
-            disabled={item.disabled}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition duration-fast disabled:opacity-30 disabled:cursor-not-allowed ${
-              item.danger
-                ? "text-fandex-tertiary hover:bg-fandex-tertiary/10"
-                : "text-nf-text hover:bg-nf-bg-hover"
-            }`}
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </Dropdown>
-  );
-}
+// 表格功能已移除，TableMenu 组件不再保留
 
 // 注：handleInsertLink 已移至 EditorBubbleMenu 组件，此处不再保留
+
+// 字号调整组件：A- / 显示当前字号 / A+ / 重置
+// 通过 useSettingsStore 调整 --fandex-editor-font-size CSS 变量，实时生效
+// 字号范围由 settingsStore.setFontSize 钳制（12-28px）
+/**
+ * 字号调整按钮组
+ * 输入: 无（直接读写 settingsStore）
+ * 输出: JSX 按钮组（缩小 / 当前字号 / 放大 / 重置）
+ * 流程:
+ *   1. 从 settingsStore 读取当前 fontSize
+ *   2. 点击 A- 调用 setFontSize(size - 1)
+ *   3. 点击 A+ 调用 setFontSize(size + 1)
+ *   4. 点击当前字号数字重置为默认 17px
+ */
+function FontSizeAdjuster() {
+  const { t } = useI18n();
+  const fontSize = useSettingsStore((s) => s.fontSize);
+  const setFontSize = useSettingsStore((s) => s.setFontSize);
+  // 默认字号（与 settingsStore DEFAULT_SETTINGS.fontSize 一致）
+  const DEFAULT_SIZE = 17;
+
+  return (
+    <div className="flex items-center gap-0.5 px-1 py-0.5 border border-nf-border-light/40 bg-nf-bg-card/40">
+      {/* 缩小字号 */}
+      <button
+        type="button"
+        onClick={() => setFontSize(fontSize - 1)}
+        disabled={fontSize <= 12}
+        title={t("shortcuts.fontSizeDecrease")}
+        tabIndex={-1}
+        className="p-1 text-nf-text-tertiary hover:text-fandex-primary hover:bg-nf-bg-hover transition-colors duration-fast disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <ZoomOut className="w-3.5 h-3.5" />
+      </button>
+      {/* 当前字号（点击重置为默认） */}
+      <button
+        type="button"
+        onClick={() => setFontSize(DEFAULT_SIZE)}
+        title={t("shortcuts.fontSizeReset")}
+        tabIndex={-1}
+        className="px-1.5 text-[11px] tabular-nums text-nf-text-secondary hover:text-fandex-primary transition-colors duration-fast min-w-[28px] text-center"
+      >
+        {fontSize}
+      </button>
+      {/* 放大字号 */}
+      <button
+        type="button"
+        onClick={() => setFontSize(fontSize + 1)}
+        disabled={fontSize >= 28}
+        title={t("shortcuts.fontSizeIncrease")}
+        tabIndex={-1}
+        className="p-1 text-nf-text-tertiary hover:text-fandex-primary hover:bg-nf-bg-hover transition-colors duration-fast disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <ZoomIn className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
 
 // 会话统计属性
 interface SessionStatsProps {
@@ -609,9 +603,7 @@ interface EditorToolbarProps {
   onSetSessionTarget: (target: number) => void;
   onResetSession?: () => void;
   // 专注模式快捷切换
-  typewriterMode: boolean;
   focusDim: boolean;
-  onToggleTypewriter: () => void;
   onToggleFocusDim: () => void;
   // 版本快照历史
   showSnapshotHistory?: boolean;
@@ -621,9 +613,6 @@ interface EditorToolbarProps {
   onToggleFindReplace?: () => void;
   // AI 辅助创作中心
   onToggleAiAssistant?: () => void;
-  // 纯阅读模式：只读 + 隐藏格式工具栏
-  readingMode?: boolean;
-  onToggleReadingMode?: () => void;
 }
 
 // 编辑器工具栏组件（Office 级富文本模式）
@@ -647,46 +636,39 @@ export default function EditorToolbar({
   onToggleSessionPause,
   onSetSessionTarget,
   onResetSession,
-  typewriterMode,
   focusDim,
-  onToggleTypewriter,
   onToggleFocusDim,
   showSnapshotHistory = false,
   onToggleSnapshotHistory,
   showFindReplace = false,
   onToggleFindReplace,
   onToggleAiAssistant,
-  readingMode = false,
-  onToggleReadingMode,
 }: EditorToolbarProps) {
   const { t } = useI18n();
 
-  // 诗歌排版：切换居中样式
+  // 诗歌排版：切换选中文本的诗歌样式（行内 Mark，仅对选中文字生效）
   const handlePoetryToggle = () => {
     if (!editor) return;
     editor.chain().focus().togglePoetry().run();
   };
 
-  // 歌词排版：切换歌词样式
+  // 歌词排版：切换选中文本的歌词样式（行内 Mark，仅对选中文字生效）
   const handleLyricsToggle = () => {
     if (!editor) return;
     editor.chain().focus().toggleLyrics().run();
   };
 
-  // 检测当前段落是否为诗歌样式
+  // 检测当前选区或光标处是否已应用诗歌样式（行内 Mark 检测）
+  // 与粗体/斜体检测逻辑一致：有选区时检测选区，无选区时检测光标处状态
   const isPoetryActive = (): boolean => {
     if (!editor) return false;
-    const { $from } = editor.state.selection;
-    const para = $from.parent;
-    return para.attrs["data-poetry"] === "true";
+    return editor.isActive("poetryMark");
   };
 
-  // 检测当前段落是否为歌词样式
+  // 检测当前选区或光标处是否已应用歌词样式（行内 Mark 检测）
   const isLyricsActive = (): boolean => {
     if (!editor) return false;
-    const { $from } = editor.state.selection;
-    const para = $from.parent;
-    return para.attrs["data-lyrics"] === "true";
+    return editor.isActive("lyricsMark");
   };
 
   // 快速加中文双引号：用“”包裹选中文本，无选中则在引号间放置光标
@@ -768,26 +750,9 @@ export default function EditorToolbar({
           onResetSession={onResetSession}
         />
         <div className="ml-auto flex items-center gap-3 text-xs text-nf-text-tertiary flex-shrink-0">
-          {/* 纯阅读模式切换：只读浏览已写内容，隐藏格式工具栏与 BubbleMenu */}
-          {!focusMode && onToggleReadingMode && (
-            <ToolbarButton
-              onClick={onToggleReadingMode}
-              active={readingMode}
-              title={`${t("editor.readingMode")} - ${t("editor.readingModeHint")}`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-            </ToolbarButton>
-          )}
-          {/* 专注模式快捷切换：阅读模式下隐藏（只读时无需打字机/焦点暗化） */}
-          {!focusMode && !readingMode && (
+          {/* 专注模式快捷切换：焦点暗化（非当前段落降低透明度） */}
+          {!focusMode && (
             <div className="flex items-center gap-0.5 p-0.5 border border-nf-border-light/40 bg-nf-bg-card/40">
-              <ToolbarButton
-                onClick={onToggleTypewriter}
-                active={typewriterMode}
-                title={`${t("editor.typewriterMode")} - ${t("editor.typewriterModeHint")}`}
-              >
-                <Square className="w-3.5 h-3.5" />
-              </ToolbarButton>
               <ToolbarButton
                 onClick={onToggleFocusDim}
                 active={focusDim}
@@ -844,9 +809,8 @@ export default function EditorToolbar({
 
       {/* 格式栏：分组容器 + flex-wrap 自动换行（无滚动条）
           行内格式（粗体/斜体/下划线/删除线/代码/颜色/链接）已移至 EditorBubbleMenu，
-          此处仅保留段落级操作，大幅减少按钮数量，解决工具栏溢出问题。
-          纯阅读模式下隐藏全部格式按钮（只读无需格式化操作） */}
-      {!focusMode && !readingMode && (
+          此处仅保留段落级操作，大幅减少按钮数量，解决工具栏溢出问题。 */}
+      {!focusMode && (
         <div className="flex flex-wrap items-center gap-1 px-4 py-1.5 border-t border-nf-border-light/50">
           {/* 标题段落组 */}
           <div className="flex items-center gap-0.5 bg-nf-bg-card/50 px-1 py-0.5 border border-nf-border-light/40">
@@ -856,11 +820,11 @@ export default function EditorToolbar({
               active={false}
               title={t("editor.horizontalRule")}
             >
-              <Minus className="w-4 h-4" />
+              <Minus className="w-3.5 h-3.5" />
             </ToolbarButton>
             {/* 中文引号下拉菜单：提供中文双引号、中文单引号、直角引号三种包裹方式 */}
             <Dropdown
-              trigger={<Quote className="w-4 h-4" />}
+              trigger={<Quote className="w-3.5 h-3.5" />}
               title={t("editor.chineseQuote")}
               panelWidth="w-44"
             >
@@ -897,14 +861,14 @@ export default function EditorToolbar({
               active={editor?.isActive({ textAlign: "left" }) || false}
               title={t("editor.alignLeft")}
             >
-              <AlignLeft className="w-4 h-4" />
+              <AlignLeft className="w-3.5 h-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor?.chain().focus().setTextAlign("center").run()}
               active={editor?.isActive({ textAlign: "center" }) || false}
               title={t("editor.alignCenter")}
             >
-              <AlignCenter className="w-4 h-4" />
+              <AlignCenter className="w-3.5 h-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor?.chain().focus().setTextAlign("right").run()}
@@ -918,13 +882,12 @@ export default function EditorToolbar({
               active={editor?.isActive({ textAlign: "justify" }) || false}
               title={t("editor.alignJustify")}
             >
-              <AlignJustify className="w-4 h-4" />
+              <AlignJustify className="w-3.5 h-3.5" />
             </ToolbarButton>
           </div>
           <Divider />
-          {/* 插入组：表格 / 诗歌 / 歌词（链接和颜色已移至 BubbleMenu，Markdown 引用块已移除改为中文引号下拉） */}
+          {/* 插入组：诗歌 / 歌词（表格已移除，链接和颜色已移至 BubbleMenu） */}
           <div className="flex items-center gap-0.5 bg-nf-bg-card/50 px-1 py-0.5 border border-nf-border-light/40">
-            <TableMenu editor={editor} />
             <ToolbarButton
               onClick={handlePoetryToggle}
               active={isPoetryActive()}
@@ -955,21 +918,21 @@ export default function EditorToolbar({
               active={false}
               title={t("editor.redo")}
             >
-              <Redo className="w-4 h-4" />
+              <Redo className="w-3.5 h-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => onToggleOutline?.()}
               active={showOutline}
               title={t("outline.title")}
             >
-              <ListTree className="w-4 h-4" />
+              <ListTree className="w-3.5 h-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => onToggleSnapshotHistory?.()}
               active={showSnapshotHistory}
               title={t("snapshot.toggleHistory")}
             >
-              <History className="w-4 h-4" />
+              <History className="w-3.5 h-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => onToggleFindReplace?.()}
@@ -983,9 +946,12 @@ export default function EditorToolbar({
               active={false}
               title={t("ai.title")}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
             </ToolbarButton>
           </div>
+          <Divider />
+          {/* 字号调整组：A- / 当前字号 / A+（实时调整编辑器字体显示大小） */}
+          <FontSizeAdjuster />
         </div>
       )}
     </div>

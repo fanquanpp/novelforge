@@ -38,8 +38,6 @@ interface SettingsState {
   indentEnabled: boolean;
   /** 首行缩进宽度（全角空格数，1-4） */
   indentWidth: number;
-  /** 打字机模式：光标行始终居中 */
-  typewriterMode: boolean;
   /** 焦点暗化：非当前段落降低透明度 */
   focusDim: boolean;
   /** 焦点暗化透明度（0-1，越低越暗） */
@@ -54,8 +52,6 @@ interface SettingsState {
   snapshotMinInterval: number;
   /** 上次创建项目使用的父目录（用于目录选择器记忆） */
   lastProjectPath: string;
-  /** 纯阅读模式：编辑器只读，隐藏格式工具栏与 BubbleMenu，适合阅读已写内容 */
-  readingMode: boolean;
   /** 编辑器背景预设 ID：default/inkblue/parchment/forest/purple/custom */
   backgroundPreset: string;
   /** 自定义背景色（仅当 backgroundPreset='custom' 时使用，hex 格式） */
@@ -81,7 +77,6 @@ interface SettingsState {
   setAutoTemplateFill: (enabled: boolean) => void;
   setIndentEnabled: (enabled: boolean) => void;
   setIndentWidth: (width: number) => void;
-  setTypewriterMode: (enabled: boolean) => void;
   setFocusDim: (enabled: boolean) => void;
   setFocusDimOpacity: (opacity: number) => void;
   setTypingSound: (enabled: boolean) => void;
@@ -90,8 +85,6 @@ interface SettingsState {
   setSnapshotMinInterval: (seconds: number) => void;
   /** 记忆上次创建项目使用的父目录 */
   setLastProjectPath: (path: string) => void;
-  /** 切换纯阅读模式（只读 + 隐藏格式工具栏） */
-  setReadingMode: (enabled: boolean) => void;
   /** 设置背景预设 ID（default/inkblue/parchment/forest/purple/custom） */
   setBackgroundPreset: (preset: string) => void;
   /** 设置自定义背景色（hex 格式，仅 custom 预设生效） */
@@ -123,7 +116,6 @@ interface SettingsData {
   autoTemplateFill: boolean;
   indentEnabled: boolean;
   indentWidth: number;
-  typewriterMode: boolean;
   focusDim: boolean;
   focusDimOpacity: number;
   typingSound: boolean;
@@ -131,7 +123,6 @@ interface SettingsData {
   snapshotEnabled: boolean;
   snapshotMinInterval: number;
   lastProjectPath: string;
-  readingMode: boolean;
   backgroundPreset: string;
   customBackgroundColor: string;
   glassOpacity: number;
@@ -153,7 +144,6 @@ const DEFAULT_SETTINGS: SettingsData = {
   autoTemplateFill: true,
   indentEnabled: true,
   indentWidth: 2,
-  typewriterMode: false,
   focusDim: false,
   focusDimOpacity: 0.35,
   typingSound: false,
@@ -161,7 +151,6 @@ const DEFAULT_SETTINGS: SettingsData = {
   snapshotEnabled: true,
   snapshotMinInterval: 60,
   lastProjectPath: "",
-  readingMode: false,
   backgroundPreset: "default",
   customBackgroundColor: "#0c0d14",
   glassOpacity: 1,
@@ -371,12 +360,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ indentWidth: clamped });
   },
 
-  setTypewriterMode: (enabled) => {
-    const data = { ...get(), typewriterMode: enabled };
-    saveSettings(data);
-    set({ typewriterMode: enabled });
-  },
-
   setFocusDim: (enabled) => {
     const data = { ...get(), focusDim: enabled };
     saveSettings(data);
@@ -420,12 +403,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const data = { ...get(), lastProjectPath: path };
     saveSettings(data);
     set({ lastProjectPath: path });
-  },
-
-  setReadingMode: (enabled) => {
-    const data = { ...get(), readingMode: enabled };
-    saveSettings(data);
-    set({ readingMode: enabled });
   },
 
   setBackgroundPreset: (preset) => {

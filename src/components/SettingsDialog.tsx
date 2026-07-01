@@ -91,7 +91,7 @@ export default function SettingsDialog({ open, onClose, initialSection }: Settin
 
   // ===== 版本更新检测状态 =====
   // 当前应用版本号（组件挂载时异步获取）
-  const [currentVersion, setCurrentVersion] = useState("26.7.3");
+  const [currentVersion, setCurrentVersion] = useState("26.7.4");
   // 检查中状态（控制按钮 loading 动画）
   const [checking, setChecking] = useState(false);
   // 检测到的新版本信息（null=未检测到或未检查）
@@ -217,8 +217,11 @@ export default function SettingsDialog({ open, onClose, initialSection }: Settin
           </button>
         </div>
 
-        {/* 内容区 */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+        {/* 内容区
+            注:min-h-0 必须保留。flex 列布局下子元素默认 min-height:auto,
+            会导致内容过多时撑破 max-h-[85vh] 约束,把底部确认按钮推出视口。
+            设置 min-h-0 后 overflow-y-auto 才能正确触发滚动,底部按钮固定可见。 */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-6">
           {/* 编辑器设置 */}
           <section ref={sectionRefs.editor}>
             <div className="flex items-center gap-2 mb-3">

@@ -271,7 +271,7 @@ export default function CreateFileWizard({
       }}
     >
       <div
-        className="nf-glass-panel w-full max-w-3xl h-[80vh] max-h-[680px] bg-nf-bg-card border border-nf-border-light shadow-2xl flex flex-col overflow-hidden"
+        className="nf-glass-panel nf-pop-in w-full max-w-3xl h-[80vh] max-h-[680px] bg-nf-bg-card border border-nf-border-light shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部：标题 + 步骤指示 + 关闭 */}
@@ -288,23 +288,23 @@ export default function CreateFileWizard({
           <button
             onClick={() => !creating && onClose()}
             disabled={creating}
-            className="p-1 hover:bg-nf-bg-hover text-nf-text-tertiary transition duration-fast disabled:opacity-50"
+            className="nf-tool-btn nf-icon-rotate p-1 hover:bg-nf-bg-hover text-nf-text-tertiary hover:text-nf-text disabled:opacity-50"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* 步骤进度条 */}
-        <div className="px-5 py-2 border-b border-nf-border-light bg-nf-bg/40">
+        {/* 步骤进度条：当前步骤脉冲指示 + 连接线进度填充 */}
+        <div className="px-5 py-2.5 border-b border-nf-border-light bg-nf-bg/40">
           <div className="flex items-center gap-1">
             {STEP_ORDER.filter((s) => showFieldsStep || s !== "fields").map((s, idx) => {
               const realIdx = STEP_ORDER.indexOf(s);
               const isActive = step === s;
               const isDone = stepIndex > realIdx;
               return (
-                <div key={s} className="flex items-center flex-1">
+                <div key={s} className="flex items-center flex-1 min-w-0">
                   <div
-                    className={`flex items-center gap-1.5 px-2 py-1 text-xs transition duration-fast ${
+                    className={`flex items-center gap-1.5 px-2 py-1 text-xs transition-colors duration-200 ${
                       isActive
                         ? "text-fandex-primary"
                         : isDone
@@ -313,7 +313,7 @@ export default function CreateFileWizard({
                     }`}
                   >
                     <span
-                      className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-medium border transition duration-fast ${
+                      className={`relative w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-medium border transition-all duration-300 ${
                         isActive
                           ? "border-fandex-primary bg-fandex-primary/10"
                           : isDone
@@ -321,12 +321,23 @@ export default function CreateFileWizard({
                           : "border-nf-border-light"
                       }`}
                     >
-                      {isDone ? <Check className="w-3 h-3" /> : idx + 1}
+                      {/* 当前步骤外环脉冲 */}
+                      {isActive && (
+                        <span className="absolute inset-0 rounded-full border border-fandex-primary/40 animate-ping opacity-60" />
+                      )}
+                      <span className="relative">{isDone ? <Check className="w-3 h-3" /> : idx + 1}</span>
                     </span>
-                    <span>{stepTitleMap[s]}</span>
+                    <span className="truncate">{stepTitleMap[s]}</span>
                   </div>
                   {idx < (showFieldsStep ? STEP_ORDER.length : STEP_ORDER.length - 1) - 1 && (
-                    <div className="flex-1 h-px bg-nf-border-light mx-1" />
+                    <div className="flex-1 h-px bg-nf-border-light mx-1 relative overflow-hidden">
+                      {/* 连接线进度填充：已完成段以 secondary 色覆盖 */}
+                      <span
+                        className={`absolute inset-y-0 left-0 bg-fandex-secondary/60 transition-all duration-500 ease-out ${
+                          stepIndex > realIdx ? "w-full" : "w-0"
+                        }`}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -334,7 +345,7 @@ export default function CreateFileWizard({
           </div>
         </div>
 
-        {/* 内容区 */}
+        {/* 内容区：步骤切换使用 nf-slide-in-left 横向滑入过渡 */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="h-full flex items-center justify-center text-nf-text-tertiary">
@@ -343,7 +354,7 @@ export default function CreateFileWizard({
           ) : (
             <div
               key={step}
-              className="h-full p-5"
+              className="nf-slide-in-left h-full p-5"
             >
               {/* 步骤1：模板选择 */}
               {step === "template" && (
@@ -401,7 +412,7 @@ export default function CreateFileWizard({
             <button
               onClick={handlePrev}
               disabled={stepIndex === 0 || creating}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover transition duration-fast disabled:opacity-30 disabled:cursor-not-allowed"
+              className="nf-tool-btn nf-icon-slide flex items-center gap-1 px-3 py-1.5 text-sm text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
               {t("wizard.prev")}
@@ -410,16 +421,16 @@ export default function CreateFileWizard({
               <button
                 onClick={handleNext}
                 disabled={!canNext || creating}
-                className="flex items-center gap-1 px-3 py-1.5 bg-fandex-primary hover:bg-fandex-primary-hover text-sm font-medium text-nf-text-inverse transition duration-fast disabled:opacity-50 disabled:cursor-not-allowed"
+                className="nf-btn-shine nf-icon-slide group flex items-center gap-1 px-4 py-1.5 bg-fandex-primary hover:bg-fandex-primary-hover text-sm font-medium text-nf-text-inverse disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {t("wizard.next")}
-                <ChevronRight className="w-4 h-4" />
+                <span className="relative z-10">{t("wizard.next")}</span>
+                <ChevronRight className="w-4 h-4 relative z-10" />
               </button>
             ) : (
               <button
                 onClick={handleFinish}
                 disabled={!fileName.trim() || creating}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-fandex-secondary hover:bg-fandex-secondary/80 text-sm font-medium text-nf-bg-inverse transition duration-fast disabled:opacity-50 disabled:cursor-not-allowed"
+                className="nf-icon-spark group flex items-center gap-1.5 px-4 py-1.5 bg-fandex-secondary hover:bg-fandex-secondary/80 text-sm font-medium text-nf-bg-inverse transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-fandex-secondary/20"
               >
                 {creating ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -510,33 +521,49 @@ function TemplateCard({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left p-3 border transition duration-fast group ${
+      className={`nf-hover-float nf-border-glow relative w-full text-left p-3 border overflow-hidden transition-all duration-200 group ${
         selected
           ? "border-fandex-primary bg-fandex-primary/5"
           : "border-nf-border-light hover:border-fandex-primary/40 hover:bg-nf-bg-hover"
       }`}
     >
+      {/* 选中态左侧色条指示器 */}
+      <span
+        className={`absolute left-0 top-0 bottom-0 w-[3px] bg-fandex-primary transition-transform duration-300 origin-center ${
+          selected ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0"
+        }`}
+      />
       <div className="flex items-start gap-3">
         <div
-          className={`w-9 h-9 flex items-center justify-center flex-shrink-0 border transition duration-fast ${
+          className={`nf-icon-spark w-9 h-9 flex items-center justify-center flex-shrink-0 border transition-all duration-300 ${
             selected
               ? "border-fandex-primary text-fandex-primary bg-fandex-primary/10"
-              : "border-nf-border-light text-nf-text-tertiary group-hover:text-nf-text-secondary"
+              : "border-nf-border-light text-nf-text-tertiary group-hover:text-nf-text-secondary group-hover:border-fandex-primary/40"
           }`}
         >
           <IconComponent className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-nf-text">{name}</span>
-            {selected && <Check className="w-3.5 h-3.5 text-fandex-primary flex-shrink-0" />}
+            <span className={`text-sm font-medium transition-colors duration-200 ${selected ? "text-fandex-primary" : "text-nf-text"}`}>
+              {name}
+            </span>
+            {selected && (
+              <Check className="w-3.5 h-3.5 text-fandex-primary flex-shrink-0 animate-scale-in" />
+            )}
           </div>
           <p className="text-xs text-nf-text-secondary mt-0.5 line-clamp-2">{description}</p>
           {moduleCount !== undefined && baseFieldCount !== undefined && (
             <div className="flex items-center gap-3 mt-1.5 text-[10px] text-nf-text-tertiary">
-              <span>{t("wizard.fieldCount", { count: baseFieldCount })}</span>
-              <span>·</span>
-              <span>{t("wizard.moduleCount", { count: moduleCount })}</span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-fandex-primary/60" />
+                {t("wizard.fieldCount", { count: baseFieldCount })}
+              </span>
+              <span className="opacity-50">·</span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-fandex-secondary/60" />
+                {t("wizard.moduleCount", { count: moduleCount })}
+              </span>
             </div>
           )}
         </div>
@@ -617,25 +644,33 @@ function ModuleToggle({ module, enabled, onToggle, t }: ModuleToggleProps) {
   return (
     <button
       onClick={onToggle}
-      className={`w-full text-left p-2.5 border transition duration-fast ${
+      className={`nf-hover-float relative w-full text-left p-2.5 border overflow-hidden transition-all duration-200 group ${
         enabled
           ? "border-fandex-secondary bg-fandex-secondary/5"
           : "border-nf-border-light hover:border-fandex-secondary/30 hover:bg-nf-bg-hover"
       }`}
     >
+      {/* 启用态左侧色条 */}
+      <span
+        className={`absolute left-0 top-0 bottom-0 w-[2px] bg-fandex-secondary transition-transform duration-300 origin-center ${
+          enabled ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0"
+        }`}
+      />
       <div className="flex items-start gap-2">
         <div
-          className={`w-4 h-4 mt-0.5 flex items-center justify-center border flex-shrink-0 transition duration-fast ${
+          className={`w-4 h-4 mt-0.5 flex items-center justify-center border flex-shrink-0 transition-all duration-300 ${
             enabled
-              ? "border-fandex-secondary bg-fandex-secondary text-nf-bg-inverse"
-              : "border-nf-border-light"
+              ? "border-fandex-secondary bg-fandex-secondary text-nf-bg-inverse scale-100"
+              : "border-nf-border-light group-hover:border-fandex-secondary/60 scale-90"
           }`}
         >
-          {enabled && <Check className="w-3 h-3" />}
+          {enabled && <Check className="w-3 h-3 animate-scale-in" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-nf-text">{module.name}</span>
+            <span className={`text-sm font-medium transition-colors duration-200 ${enabled ? "text-fandex-secondary" : "text-nf-text"}`}>
+              {module.name}
+            </span>
             <span className="text-[10px] text-nf-text-tertiary">
               {t("wizard.fieldCount", { count: module.fields.length })}
             </span>
@@ -664,10 +699,10 @@ interface FieldChipProps {
 function FieldChip({ field, required, compact }: FieldChipProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1 border text-[10px] transition duration-fast ${
+      className={`inline-flex items-center gap-1 border text-[10px] transition-all duration-200 ${
         required
           ? "border-fandex-primary/30 bg-fandex-primary/5 text-fandex-primary"
-          : "border-nf-border-light text-nf-text-secondary"
+          : "border-nf-border-light text-nf-text-secondary hover:border-fandex-primary/30 hover:text-fandex-primary"
       } ${compact ? "px-1.5 py-0.5" : "px-2 py-1"}`}
     >
       {field.label}
@@ -690,18 +725,30 @@ interface NameStepProps {
 
 function NameStep({ fileName, error, onChange, placeholder, label, autoMd }: NameStepProps) {
   return (
-    <div className="max-w-md mx-auto py-8">
+    <div className="max-w-md mx-auto py-8 nf-rise-in">
       <label className="block text-xs text-nf-text-secondary mb-1.5">{label}</label>
-      <input
-        type="text"
-        value={fileName}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoFocus
-        className="w-full bg-nf-bg border border-nf-border-light px-3 py-2.5 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none focus:border-fandex-primary/60 transition duration-fast"
-      />
+      <div className="relative">
+        <input
+          type="text"
+          value={fileName}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoFocus
+          className={`nf-border-glow w-full bg-nf-bg border px-3 py-2.5 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none transition-all duration-200 ${
+            error
+              ? "border-red-400/70 focus:border-red-400"
+              : "border-nf-border-light focus:border-fandex-primary/60"
+          }`}
+        />
+        {/* 输入框右侧实时状态指示 */}
+        {fileName.trim() && !error && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 animate-scale-in">
+            <Check className="w-4 h-4 text-fandex-secondary" />
+          </span>
+        )}
+      </div>
       {error ? (
-        <p className="flex items-center gap-1 text-xs text-red-400 mt-1.5">
+        <p className="flex items-center gap-1 text-xs text-red-400 mt-1.5 animate-shake">
           <AlertCircle className="w-3 h-3" />
           {error}
         </p>
@@ -723,7 +770,7 @@ interface PreviewStepProps {
 function PreviewStep({ content, isBlank, t }: PreviewStepProps) {
   if (isBlank || !content) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-nf-text-tertiary gap-2">
+      <div className="h-full flex flex-col items-center justify-center text-nf-text-tertiary gap-2 nf-rise-in">
         <FileText className="w-8 h-8 opacity-40" />
         <p className="text-sm">{t("wizard.previewEmpty")}</p>
       </div>
@@ -731,14 +778,20 @@ function PreviewStep({ content, isBlank, t }: PreviewStepProps) {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center gap-1.5 mb-2">
-        <Eye className="w-3.5 h-3.5 text-fandex-primary" />
-        <span className="text-xs font-semibold text-nf-text uppercase tracking-wider">
-          {t("wizard.previewTitle")}
+    <div className="h-full flex flex-col nf-rise-in">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Eye className="w-3.5 h-3.5 text-fandex-primary" />
+          <span className="text-xs font-semibold text-nf-text uppercase tracking-wider">
+            {t("wizard.previewTitle")}
+          </span>
+        </div>
+        <span className="text-[10px] text-nf-text-tertiary inline-flex items-center gap-1">
+          <span className="w-1 h-1 rounded-full bg-fandex-secondary/70" />
+          {content.length} chars
         </span>
       </div>
-      <pre className="flex-1 overflow-auto p-3 bg-nf-bg border border-nf-border-light text-xs text-nf-text font-mono whitespace-pre-wrap break-all">
+      <pre className="flex-1 overflow-auto p-4 bg-nf-bg-code/60 border border-nf-border-light text-xs text-nf-text font-mono whitespace-pre-wrap break-all leading-relaxed">
         {content}
       </pre>
     </div>

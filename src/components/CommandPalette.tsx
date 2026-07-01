@@ -26,7 +26,6 @@ import {
   Sun,
   Moon,
   Keyboard,
-  Target,
   Save,
   Sparkles,
   RotateCcw,
@@ -195,14 +194,6 @@ export default function CommandPalette({
         icon: Keyboard,
       },
       {
-        id: "toggle-typewriter",
-        label: settings.typewriterMode ? t("command.disableTypewriter") : t("command.enableTypewriter"),
-        category: t("command.categoryEditor"),
-        keywords: ["打字机", "typewriter", "居中", "专注"],
-        action: () => settings.setTypewriterMode(!settings.typewriterMode),
-        icon: Target,
-      },
-      {
         id: "toggle-focus-dim",
         label: settings.focusDim ? t("command.disableFocusDim") : t("command.enableFocusDim"),
         category: t("command.categoryEditor"),
@@ -297,8 +288,19 @@ export default function CommandPalette({
     );
   }, [query, allCommands]);
 
-  // 当前展示列表：无查询时显示最近使用 + 全部命令；有查询时仅显示过滤结果
-  const displayList = query.trim() ? filtered : (recentCommands.length > 0 ? recentCommands : allCommands);
+  // 当前展示列表：
+  // - 有查询：仅显示过滤结果
+  // - 无查询 + 有最近使用：最近使用置顶（单独分组）+ 其余全部命令（去重）
+  // - 无查询 + 无最近使用：显示全部命令
+  const displayList = useMemo(() => {
+    if (query.trim()) return filtered;
+    if (recentCommands.length === 0) return allCommands;
+    const recentIdsSet = new Set(recentCommands.map((c) => c.id));
+    const rest = allCommands.filter((c) => !recentIdsSet.has(c.id));
+    // 将最近使用命令的 category 临时改为「最近使用」分组，置顶展示
+    const recentTagged = recentCommands.map((c) => ({ ...c, category: t("command.recent") }));
+    return [...recentTagged, ...rest];
+  }, [query, filtered, recentCommands, allCommands, t]);
 
   // 重置选择与查询
   useEffect(() => {
@@ -395,21 +397,19 @@ export default function CommandPalette({
           </kbd>
         </div>
 
-        {/* 命令列表（分组展示） */}
+        {/* 命令列表（分组展示，最近使用分组自动置顶） */}
         <div className="max-h-[340px] overflow-y-auto py-1">
-          {!query.trim() && recentCommands.length > 0 && (
-            <div className="px-4 py-1 text-[10px] font-medium text-fandex-secondary uppercase tracking-wider">
-              {t("command.recent")}
-            </div>
-          )}
           {displayList.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-nf-text-tertiary">
               {t("command.noMatch")}
             </div>
           ) : (
-            Object.entries(grouped).map(([groupName, cmds]) => (
+            Object.entries(grouped).map(([groupName, cmds]) => {
+              // 「最近使用」分组使用次色高亮，其余分组使用三级文字色
+              const isRecentGroup = groupName === t("command.recent");
+              return (
               <div key={groupName}>
-                <div className="px-4 py-1 text-[10px] font-medium text-nf-text-tertiary uppercase tracking-wider">
+                <div className={`px-4 py-1 text-[10px] font-medium uppercase tracking-wider ${isRecentGroup ? "text-fandex-secondary" : "text-nf-text-tertiary"}`}>
                   {groupName}
                 </div>
                 {cmds.map((cmd) => {
@@ -444,7 +444,8 @@ export default function CommandPalette({
                   );
                 })}
               </div>
-            ))
+              );
+            })
           )}
         </div>
 

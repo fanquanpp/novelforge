@@ -35,10 +35,6 @@ import Heading from "@tiptap/extension-heading";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
-import Table from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
 import Link from "@tiptap/extension-link";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
@@ -62,7 +58,6 @@ import { VSShortcuts } from "../lib/vscodeShortcuts";
 import { AutoPair } from "../lib/autoPair";
 import { LineHighlight } from "../lib/lineHighlight";
 import { SmartTab } from "../lib/smartTab";
-import { TypewriterMode } from "../lib/typewriterMode";
 import { FocusDim } from "../lib/focusDim";
 import { FontSizeShortcut } from "../lib/fontSizeShortcut";
 import { countWords } from "../lib/wordCounter";
@@ -198,12 +193,10 @@ export default function NovelEditor({
   const diaryAutoDate = useSettingsStore((s) => s.diaryAutoDate);
   const indentEnabled = useSettingsStore((s) => s.indentEnabled);
   const indentWidth = useSettingsStore((s) => s.indentWidth);
-  const typewriterMode = useSettingsStore((s) => s.typewriterMode);
   const focusDim = useSettingsStore((s) => s.focusDim);
   const focusDimOpacity = useSettingsStore((s) => s.focusDimOpacity);
   const snapshotEnabled = useSettingsStore((s) => s.snapshotEnabled);
   const snapshotMinInterval = useSettingsStore((s) => s.snapshotMinInterval);
-  const readingMode = useSettingsStore((s) => s.readingMode);
   const [showOutline, setShowOutline] = useState(false);
   const [showSnapshotHistory, setShowSnapshotHistory] = useState(false);
   // 查找替换面板可见性（Ctrl+F / Ctrl+H 触发）
@@ -324,11 +317,7 @@ export default function NovelEditor({
       ListItem,
       TaskList,
       TaskItem.configure({ nested: true }),
-      // 表格：可调整列宽
-      Table.configure({ resizable: true, HTMLAttributes: { class: "nf-table" } }),
-      TableRow,
-      TableHeader,
-      TableCell,
+      // 表格功能已移除（Table/TableRow/TableCell/TableHeader 扩展不再注册）
       // 链接：不自动跳转（按 Ctrl/Cmd+Click 跳转），允许任意协议
       Link.configure({
         openOnClick: false,
@@ -363,8 +352,6 @@ export default function NovelEditor({
       LineHighlight.configure({ enabled: true, className: "current-paragraph" }),
       // VSCode 风格智能选中缩进（Tab/Shift+Tab 批量缩进多段）
       SmartTab.configure({ enabled: true, indentChar: "\u3000" }),
-      // 打字机模式：光标行始终居中（iA Writer 风格）
-      TypewriterMode.configure({ enabled: typewriterMode, centerRatio: 0.45 }),
       // 焦点暗化：非当前段落降低透明度（iA Writer 风格）
       FocusDim.configure({ enabled: focusDim, dimOpacity: focusDimOpacity, scope: "paragraph" }),
       // 字号快捷键:Ctrl+= 放大 / Ctrl+- 缩小 / Ctrl+0 重置
@@ -395,14 +382,12 @@ export default function NovelEditor({
 
     exts.push(PoetryFormat.configure({ enabled: true }));
     return exts;
-  }, [isProse, isScript, isDialogue, characters, t, indentEnabled, indentWidth, typewriterMode, focusDim, focusDimOpacity]);
+  }, [isProse, isScript, isDialogue, characters, t, indentEnabled, indentWidth, focusDim, focusDimOpacity]);
 
   // 创建编辑器实例（Office 级富文本模式）
-  // editable 受 readingMode 控制：纯阅读模式下只读，避免误编辑
   const editor = useEditor({
     extensions,
     content: "",
-    editable: !readingMode,
     editorProps: {
       attributes: {
         class:
@@ -419,14 +404,6 @@ export default function NovelEditor({
       }
     },
   });
-
-  // 纯阅读模式切换：实时调整编辑器可编辑状态
-  // 阅读模式下禁用编辑，避免阅读时误触修改内容
-  useEffect(() => {
-    if (editor) {
-      editor.setEditable(!readingMode);
-    }
-  }, [editor, readingMode]);
 
   // 加载文件内容（智能识别 HTML 富文本 vs 纯文本，向后兼容旧 .txt）
   useEffect(() => {
@@ -871,17 +848,13 @@ export default function NovelEditor({
         onToggleSessionPause={session.togglePause}
         onSetSessionTarget={session.updateWordTarget}
         onResetSession={session.resetSession}
-        typewriterMode={typewriterMode}
         focusDim={focusDim}
-        onToggleTypewriter={() => useSettingsStore.getState().setTypewriterMode(!typewriterMode)}
         onToggleFocusDim={() => useSettingsStore.getState().setFocusDim(!focusDim)}
         showSnapshotHistory={showSnapshotHistory}
         onToggleSnapshotHistory={() => setShowSnapshotHistory((prev) => !prev)}
         showFindReplace={showFindReplace}
         onToggleFindReplace={() => setShowFindReplace((prev) => !prev)}
         onToggleAiAssistant={() => setShowAiAssistant(true)}
-        readingMode={readingMode}
-        onToggleReadingMode={() => useSettingsStore.getState().setReadingMode(!readingMode)}
       />
 
       {isScript && characters.length > 0 && (
@@ -920,8 +893,7 @@ export default function NovelEditor({
         <div className="flex-1 overflow-y-auto relative">
           <EditorContent editor={editor} />
           {/* 选中文字时浮起的格式化工具栏：行内格式移到此处的 BubbleMenu，减少主工具栏按钮数量 */}
-          {/* 纯阅读模式下隐藏 BubbleMenu，避免只读时弹出格式化菜单 */}
-          {editor && !readingMode && <EditorBubbleMenu editor={editor} />}
+          {editor && <EditorBubbleMenu editor={editor} />}
           {/* 查找替换面板：浮于编辑区顶部，Ctrl+F / Ctrl+H 触发 */}
           {showFindReplace && editor && (
             <FindReplace
