@@ -43,7 +43,7 @@ function detectCategoryFromPath(relativePath: string): string {
     "大纲": "outline",
     "角色": "characters",
     "世界观": "worldview",
-    "名词": "glossary",
+    "术语": "glossary",
     "素材": "materials",
     "时间线": "timeline",
   };

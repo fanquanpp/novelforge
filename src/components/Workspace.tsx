@@ -21,6 +21,7 @@ import GlobalSearch from "./GlobalSearch";
 import VolumeManager from "./VolumeManager";
 import SettingsDialog from "./SettingsDialog";
 import CreateFileDialog from "./CreateFileDialog";
+import CreateFileWizard from "./CreateFileWizard";
 import CommandPalette from "./CommandPalette";
 import ProjectArchiveDialog from "./ProjectArchiveDialog";
 import ErrorBoundary from "./ErrorBoundary";
@@ -33,6 +34,7 @@ import { getCategoryConfig } from "../lib/categoryRegistry";
 import { useSettingsStore, formatChapterHeading, getNextChapterNum } from "../lib/settingsStore";
 import { useToast } from "../lib/toast";
 import { useI18n } from "../lib/i18n";
+import { isTemplateSupported, getTemplateCategory } from "../lib/templateSchema";
 import { findDirByName } from "../lib/fileTreeUtils";
 import ForeshadowingPanel from "./ForeshadowingPanel";
 
@@ -69,6 +71,8 @@ export default function Workspace() {
   const setActiveCategory = useAppStore((s) => s.setActiveCategory);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  // 模块化模板向导打开状态（角色/世界观/术语/大纲 分类使用）
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [showFocusTimer, setShowFocusTimer] = useState(false);
@@ -284,6 +288,18 @@ export default function Workspace() {
     showToast("success", t("workspace.fileCreated", { name: finalFileName }));
   }, [currentProject, activeCategory, projectTree, getFileTemplate, setProjectTree, showToast, t]);
 
+  // 处理向导新建文件确认（接收已渲染的模板内容）
+  // 用于角色/世界观/术语/大纲等模板化分类，内容由向导通过后端 render_template 生成
+  const handleCreateFileWithContent = useCallback(async (fileName: string, content: string) => {
+    if (!currentProject) throw new Error("无当前项目");
+    const dirName = getCategoryDir(activeCategory);
+    const relativePath = `${dirName}/${fileName}`;
+    await createFile(currentProject.path, relativePath, content);
+    const tree = await readProjectTree(currentProject.path);
+    setProjectTree(tree);
+    showToast("success", t("workspace.fileCreated", { name: fileName }));
+  }, [currentProject, activeCategory, setProjectTree, showToast, t]);
+
   // 首次创建：序章
   const handleCreatePrologue = useCallback(async () => {
     setShowFirstFileDialog(false);
@@ -314,15 +330,23 @@ export default function Workspace() {
   }, []);
 
   // 命令面板中触发新建文件
+  // 支持模板化分类（角色/世界观/术语/大纲）走向导，其他分类走原对话框
   const handleCommandCreateFile = useCallback(async (category: SidebarCategory) => {
     await handleSwitchCategory(category);
-    setCreateDialogOpen(true);
+    if (isTemplateSupported(category)) {
+      setWizardOpen(true);
+    } else {
+      setCreateDialogOpen(true);
+    }
   }, [handleSwitchCategory]);
 
   // 新建文件入口：正文首次创建时显示选择对话框
+  // 支持模板化分类（角色/世界观/术语/大纲）走向导，其他分类走原对话框
   const handleNewFileRequest = useCallback(() => {
     if (activeCategory === "manuscript" && isManuscriptEmpty) {
       setShowFirstFileDialog(true);
+    } else if (isTemplateSupported(activeCategory)) {
+      setWizardOpen(true);
     } else {
       setCreateDialogOpen(true);
     }
@@ -382,6 +406,15 @@ export default function Workspace() {
         dirName={getCategoryDir(activeCategory)}
         onClose={() => setCreateDialogOpen(false)}
         onConfirm={handleCreateFile}
+      />
+
+      {/* 模块化模板向导（角色/世界观/术语/大纲分类使用） */}
+      <CreateFileWizard
+        open={wizardOpen}
+        dirName={getCategoryDir(activeCategory)}
+        templateCategory={getTemplateCategory(activeCategory) ?? ""}
+        onClose={() => setWizardOpen(false)}
+        onConfirm={handleCreateFileWithContent}
       />
 
       <CommandPalette

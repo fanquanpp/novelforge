@@ -15,6 +15,7 @@ mod project_template;
 mod snapshot_commands;
 mod character_commands;
 mod foreshadowing_commands;
+mod template_schema;
 
 /// 应用入口函数
 /// 输入: 无
@@ -73,6 +74,9 @@ pub fn run() {
             character_commands::read_character_summary,
             // 伏笔追踪命令
             foreshadowing_commands::scan_foreshadowing,
+            // 模块化模板系统命令
+            template_schema::get_templates,
+            template_schema::render_template,
         ])
         .setup(|_app| {
             Ok(())
