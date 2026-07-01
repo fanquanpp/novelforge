@@ -20,8 +20,7 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  Sun,
-  Moon,
+  Palette,
   BarChart3,
   Search,
   Layers,
@@ -37,7 +36,6 @@ import {
   type SidebarCategory,
   CATEGORY_DIRS,
 } from "../lib/store";
-import { useThemeStore } from "../lib/themeStore";
 import { getTypeSpecificDirs } from "../lib/templateRegistry";
 import { useI18n } from "../lib/i18n";
 import { useAutoSaveOnExit } from "../hooks/useAutoSaveOnExit";
@@ -68,6 +66,8 @@ const TOOL_CATEGORIES: SidebarCategory[] = ["stats", "search"];
 interface SidebarProps {
   onCreateFile: () => void;
   onOpenSettings?: () => void;
+  /** 打开外观设置回调（定位到主题/外观分区），未提供时回退到 onOpenSettings */
+  onOpenAppearance?: () => void;
   onSwitchCategory?: (category: SidebarCategory) => void;
 }
 
@@ -76,6 +76,7 @@ interface SidebarProps {
  * 输入:
  *   onCreateFile 新建文件回调
  *   onOpenSettings 打开设置回调（可选）
+ *   onOpenAppearance 打开外观设置回调（可选，定位到外观分区）
  *   onSwitchCategory 切换分类回调（可选，带保存检查）
  * 输出: JSX 侧边栏界面（项目信息 + 分类导航 + 最近文件 + 工具区）
  * 流程:
@@ -84,13 +85,12 @@ interface SidebarProps {
  *   3. 渲染工具分类：统计、全局搜索
  *   4. 渲染最近打开文件列表（最多5项，按时间倒序）
  *   5. 高亮当前选中分类，点击触发 onSwitchCategory
- *   6. 底部工具区：主题切换、新建文件、设置入口
+ *   6. 底部工具区：主题设置入口、新建文件、设置入口
  */
-export default function Sidebar({ onCreateFile, onOpenSettings, onSwitchCategory }: SidebarProps) {
+export default function Sidebar({ onCreateFile, onOpenSettings, onOpenAppearance, onSwitchCategory }: SidebarProps) {
   const currentProject = useAppStore((s) => s.currentProject);
   const activeCategory = useAppStore((s) => s.activeCategory);
   const setActiveCategory = useAppStore((s) => s.setActiveCategory);
-  const { theme, toggleTheme } = useThemeStore();
   const { t } = useI18n();
   const { handleBackToLauncher } = useAutoSaveOnExit();
 
@@ -151,16 +151,17 @@ export default function Sidebar({ onCreateFile, onOpenSettings, onSwitchCategory
       }} />
 
       {/* 顶部: 项目名称与返回 - FANDEX 左侧色条 */}
-      <div className="px-3 py-3 border-b border-nf-border-light relative overflow-hidden">
+      <div className="px-3 py-3 border-b border-nf-border-light relative overflow-hidden flex-shrink-0">
         {/* 微妙的背景渐变 */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
           background: 'linear-gradient(135deg, var(--fandex-primary), var(--fandex-secondary))',
         }} />
-        {/* 折叠/展开切换按钮:固定右上角,折叠态下为顶部唯一可见控件 */}
+        {/* 折叠/展开切换按钮:固定右上角,提升 z 层级避免被相邻元素覆盖,
+            折叠态下居中显示为顶部唯一可见控件 */}
         <button
           onClick={() => setCollapsed((v) => !v)}
           title={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
-          className="absolute top-2 right-2 z-20 w-6 h-6 flex items-center justify-center text-nf-text-tertiary hover:text-fandex-primary transition-colors duration-fast"
+          className={`absolute top-2 ${collapsed ? "left-1/2 -translate-x-1/2" : "right-2"} z-30 w-6 h-6 flex items-center justify-center text-nf-text-tertiary hover:text-fandex-primary hover:bg-nf-bg-hover rounded transition-colors duration-fast`}
         >
           {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
@@ -401,21 +402,18 @@ export default function Sidebar({ onCreateFile, onOpenSettings, onSwitchCategory
         })}
       </div>
 
-      {/* 底部: 主题切换、设置与新建文件按钮 - 统一大小,协调布局 */}
+      {/* 底部: 主题设置入口、设置与新建文件按钮 - 统一大小,协调布局 */}
       <div className="px-2 py-2 border-t border-nf-border-light space-y-1.5">
-        {/* 第一行:主题切换 + 设置按钮,等宽并排,折叠时仅图标 */}
+        {/* 第一行:主题设置 + 设置按钮,等宽并排,折叠时仅图标
+            主题切换已迁移至设置对话框外观分区,此处仅作为入口,避免与多预设主题冲突 */}
         <div className={`flex gap-1.5 ${collapsed ? "flex-col" : ""}`}>
           <button
-            onClick={toggleTheme}
-            title={theme === "dark" ? t("sidebar.switchLight") : t("sidebar.switchDark")}
+            onClick={() => (onOpenAppearance ? onOpenAppearance() : onOpenSettings?.())}
+            title={t("sidebar.openAppearanceSettings")}
             className={`flex items-center justify-center gap-1.5 py-2 text-xs text-nf-text-secondary hover:text-fandex-tertiary border border-nf-border-light hover:border-fandex-tertiary/60 hover:bg-nf-bg-hover transition-all duration-base ease-fandex ${collapsed ? "w-full" : "flex-1"}`}
           >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 transition-transform duration-fast hover:rotate-45" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-            {!collapsed && (theme === "dark" ? t("sidebar.light") : t("sidebar.dark"))}
+            <Palette className="w-4 h-4 transition-transform duration-fast hover:scale-110" />
+            {!collapsed && t("sidebar.themeSettings")}
           </button>
           <button
             onClick={onOpenSettings}

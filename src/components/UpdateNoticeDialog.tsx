@@ -106,7 +106,7 @@ export default function UpdateNoticeDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-2xl max-h-[85vh] flex flex-col">
+      <div className="nf-glass-panel w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-2xl max-h-[85vh] flex flex-col">
         {/* 头部：渐变背景 + 新版本标识 */}
         <div className="relative px-6 py-5 border-b border-nf-border-light overflow-hidden flex-shrink-0">
           {/* 背景渐变装饰 */}

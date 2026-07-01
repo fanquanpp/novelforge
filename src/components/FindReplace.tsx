@@ -257,7 +257,7 @@ export default function FindReplace({
   };
 
   return (
-    <div className="absolute top-2 right-2 w-80 bg-nf-bg-card border border-nf-border-light shadow-lg z-30 animate-slide-up">
+    <div className="nf-glass-panel absolute top-2 right-2 w-80 bg-nf-bg-card border border-nf-border-light shadow-lg z-30 animate-slide-up">
       {/* 头部：模式标签 + 关闭按钮 */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-nf-border-light">
         <div className="flex items-center gap-1">

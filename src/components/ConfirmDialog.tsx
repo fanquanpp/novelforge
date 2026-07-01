@@ -106,7 +106,7 @@ export default function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
-        className="w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg"
+        className="nf-glass-panel w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-nf-border-light">

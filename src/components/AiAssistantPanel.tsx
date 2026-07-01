@@ -68,7 +68,7 @@ export default function AiAssistantPanel({ open, onClose }: AiAssistantPanelProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-      <div className="w-[640px] max-w-[90vw] max-h-[80vh] bg-nf-bg-panel border border-nf-border-light rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="nf-glass-panel w-[640px] max-w-[90vw] max-h-[80vh] bg-nf-bg-panel border border-nf-border-light rounded-xl shadow-2xl flex flex-col overflow-hidden">
         {/* 头部 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-nf-border-light">
           <div className="flex items-center gap-2">

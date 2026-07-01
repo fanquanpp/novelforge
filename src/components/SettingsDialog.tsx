@@ -9,7 +9,7 @@
 // 2. 实时预览设置变更
 // 3. 持久化到 localStorage
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { X, Type, BookOpen, FileText, Palette, Zap, Droplet, Info, RefreshCw, ExternalLink, CheckCircle } from "lucide-react";
 import { useSettingsStore, BACKGROUND_PRESETS, type ChapterFormat } from "../lib/settingsStore";
 import { useThemeStore } from "../lib/themeStore";
@@ -18,9 +18,20 @@ import { useToast } from "../lib/toast";
 import { checkForUpdates, getCurrentVersion, openExternalUrl, RELEASES_PAGE_URL, type ReleaseInfo } from "../lib/updateChecker";
 import UpdateNoticeDialog from "./UpdateNoticeDialog";
 
+// 设置分区类型：用于 initialSection 属性指定打开时定位的分区
+export type SettingsSection =
+  | "editor"
+  | "chapter"
+  | "automation"
+  | "indent"
+  | "appearance"
+  | "about";
+
 interface SettingsDialogProps {
   open: boolean;
   onClose: () => void;
+  /** 打开时自动滚动定位到的分区，未指定时默认显示顶部 */
+  initialSection?: SettingsSection;
 }
 
 /**
@@ -28,14 +39,16 @@ interface SettingsDialogProps {
  * 输入:
  *   - open: 对话框显示状态
  *   - onClose: 关闭回调
+ *   - initialSection: 打开时自动定位到的分区（可选）
  * 输出: JSX 模态框（open=false 时返回 null）
  * 流程:
  *   1. 从 settingsStore 读取所有配置项
- *   2. 渲染五大设置分区：编辑器、章节、自动化、首行缩进、主题
+ *   2. 渲染六大设置分区：编辑器、章节、自动化、首行缩进、外观、关于与更新
  *   3. 每个设置项变更立即写回 store 并持久化到 localStorage
- *   4. 点击遮罩或关闭按钮触发 onClose
+ *   4. 若传入 initialSection，打开时自动滚动到对应分区
+ *   5. 点击遮罩或关闭按钮触发 onClose
  */
-export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
+export default function SettingsDialog({ open, onClose, initialSection }: SettingsDialogProps) {
   const { t } = useI18n();
   const {
     fontSize,
@@ -78,7 +91,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
   // ===== 版本更新检测状态 =====
   // 当前应用版本号（组件挂载时异步获取）
-  const [currentVersion, setCurrentVersion] = useState("26.7.2");
+  const [currentVersion, setCurrentVersion] = useState("26.7.3");
   // 检查中状态（控制按钮 loading 动画）
   const [checking, setChecking] = useState(false);
   // 检测到的新版本信息（null=未检测到或未检查）
@@ -158,6 +171,30 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }
   }, [indentInput, indentWidth, setIndentWidth]);
 
+  // 各分区 ref 引用:用于 initialSection 滚动定位
+  const sectionRefs = {
+    editor: useRef<HTMLElement>(null),
+    chapter: useRef<HTMLElement>(null),
+    automation: useRef<HTMLElement>(null),
+    indent: useRef<HTMLElement>(null),
+    appearance: useRef<HTMLElement>(null),
+    about: useRef<HTMLElement>(null),
+  };
+
+  // 打开时若指定 initialSection,自动滚动到对应分区
+  useEffect(() => {
+    if (!open || !initialSection) return;
+    const timer = setTimeout(() => {
+      const targetRef = sectionRefs[initialSection];
+      if (targetRef.current) {
+        targetRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 80);
+    return () => clearTimeout(timer);
+    // 仅在 open 与 initialSection 变化时触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialSection]);
+
   if (!open) return null;
 
   return (
@@ -165,7 +202,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
       onClick={handleOverlayClick}
     >
-      <div className="w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-2xl max-h-[85vh] flex flex-col">
+      <div className="nf-glass-panel w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-2xl max-h-[85vh] flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-nf-border-light flex-shrink-0">
           <h2 className="fandex-bar-left text-base font-bold font-display text-nf-text">
@@ -183,7 +220,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         {/* 内容区 */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* 编辑器设置 */}
-          <section>
+          <section ref={sectionRefs.editor}>
             <div className="flex items-center gap-2 mb-3">
               <Type className="w-4 h-4 text-fandex-primary" />
               <h3 className="text-sm font-bold font-display text-nf-text">
@@ -248,7 +285,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </section>
 
           {/* 章节标题设置 */}
-          <section>
+          <section ref={sectionRefs.chapter}>
             <div className="flex items-center gap-2 mb-3">
               <BookOpen className="w-4 h-4 text-fandex-secondary" />
               <h3 className="text-sm font-bold font-display text-nf-text">
@@ -323,7 +360,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </section>
 
           {/* 自动化设置 */}
-          <section>
+          <section ref={sectionRefs.automation}>
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-4 h-4 text-yellow-500" />
               <h3 className="text-sm font-bold font-display text-nf-text">
@@ -407,7 +444,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </section>
 
           {/* 首行缩进设置 */}
-          <section>
+          <section ref={sectionRefs.indent}>
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-green-500" />
               <h3 className="text-sm font-bold font-display text-nf-text">
@@ -474,7 +511,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </section>
 
           {/* 外观设置 */}
-          <section>
+          <section ref={sectionRefs.appearance}>
             <div className="flex items-center gap-2 mb-3">
               <Palette className="w-4 h-4 text-fandex-tertiary" />
               <h3 className="text-sm font-bold font-display text-nf-text">
@@ -633,7 +670,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </section>
 
           {/* 关于与更新设置 */}
-          <section>
+          <section ref={sectionRefs.about}>
             <div className="flex items-center gap-2 mb-3">
               <Info className="w-4 h-4 text-fandex-primary" />
               <h3 className="text-sm font-bold font-display text-nf-text">

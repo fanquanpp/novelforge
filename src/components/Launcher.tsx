@@ -24,8 +24,7 @@ import {
   Loader2,
   RefreshCw,
   X,
-  Sun,
-  Moon,
+  Palette,
   FileText,
   BookMarked,
   ScrollText,
@@ -56,13 +55,13 @@ import CreateProjectDialog from "./CreateProjectDialog";
 import TemplateManager from "./TemplateManager";
 import { ProjectGridSkeleton } from "./SkeletonComponents";
 import { useI18n } from "../lib/i18n";
-import { useThemeStore } from "../lib/themeStore";
 import { exists, mkdir } from "@tauri-apps/plugin-fs";
 import { useToast } from "../lib/toast";
 import ConfirmDialog from "./ConfirmDialog";
 import ProjectArchiveDialog from "./ProjectArchiveDialog";
 import WelcomeDialog from "./WelcomeDialog";
 import UpdateNoticeDialog from "./UpdateNoticeDialog";
+import SettingsDialog, { type SettingsSection } from "./SettingsDialog";
 import { useSettingsStore } from "../lib/settingsStore";
 import { checkForUpdates, type ReleaseInfo } from "../lib/updateChecker";
 
@@ -97,8 +96,6 @@ export default function Launcher() {
   const closeProject = useAppStore((s) => s.closeProject);
   const { t } = useI18n();
   const { showToast } = useToast();
-  const theme = useThemeStore((s) => s.theme);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const [scanDir, setScanDir] = useState("");
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,7 +103,7 @@ export default function Launcher() {
   const [selectedType, setSelectedType] = useState<ProjectType>("standard");
   const [typePanelExpanded, setTypePanelExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [appVersion, setAppVersion] = useState("26.7.2");
+  const [appVersion, setAppVersion] = useState("26.7.3");
   const [deleteTarget, setDeleteTarget] = useState<ProjectInfo | null>(null);
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
   const [showTemplateManager, setShowTemplateManager] = useState(false);
@@ -114,6 +111,22 @@ export default function Launcher() {
   const [importArchiveOpen, setImportArchiveOpen] = useState(false);
   // 首次欢迎页受控开关：主页"回顾"按钮触发
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  // 设置对话框受控状态:主页右上角设置入口按钮触发
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // 设置对话框打开时定位的分区:外观入口按钮传入 appearance,普通设置入口为 undefined
+  const [settingsInitialSection, setSettingsInitialSection] = useState<SettingsSection | undefined>(undefined);
+
+  /**
+   * 打开设置对话框
+   * 输入:
+   *   section 可选,指定打开时定位到的分区(如 appearance)
+   * 输出: 无
+   * 流程: 设置 initialSection 并打开对话框
+   */
+  const handleOpenSettings = useCallback((section?: SettingsSection) => {
+    setSettingsInitialSection(section);
+    setSettingsOpen(true);
+  }, []);
 
   // ===== 启动时自动检查更新 =====
   // 从 settingsStore 读取更新检查相关设置
@@ -525,10 +538,11 @@ export default function Launcher() {
               <span className="absolute -top-0.5 -right-2.5 w-1 h-1 rounded-full bg-fandex-tertiary/70" />
             </div>
             <div>
-              {/* 品牌名改为拼音,避免中文显示导致路径编码问题 */}
+              {/* 品牌名:主显示使用中文「喵创说」,增强可读性与品牌识别 */}
               <h1 className="text-lg font-bold font-display text-nf-text tracking-tight">
-                MiaoChuangShuo
+                喵创说
               </h1>
+              {/* 副标题:使用拼音/英文标识,避免与品牌名重复,符合国际命名规范 */}
               <p className="text-[10px] text-nf-text-tertiary">
                 {t("launcher.subtitle")}
               </p>
@@ -540,9 +554,9 @@ export default function Launcher() {
         <div className="px-4 space-y-2 flex flex-col flex-1 min-h-0">
           <button
             onClick={handleNewProjectClick}
-            className="group w-full flex items-center gap-2.5 px-4 py-3 bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse font-medium text-sm transition-all duration-base ease-fandex shadow-sm hover:shadow-md"
+            className="nf-btn-shine group w-full flex items-center gap-2.5 px-4 py-3 bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse font-medium text-sm transition-all duration-base ease-fandex shadow-sm hover:shadow-md"
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4 transition-transform duration-base ease-fandex group-hover:scale-110" />
             {t("launcher.createNew")}
             {/* 箭头:展开时旋转 90 度朝下,悬停时额外右移,增强方向感 */}
             <ArrowRight className={`w-3.5 h-3.5 ml-auto transition-transform duration-base ease-fandex group-hover:translate-x-0.5 ${typePanelExpanded ? 'rotate-90' : ''}`} />
@@ -632,7 +646,7 @@ export default function Launcher() {
           {/* 导入按钮 */}
           <button
             onClick={handleImport}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover border border-nf-border-light hover:border-fandex-primary/40 text-sm transition-all duration-base ease-fandex"
+            className="nf-icon-slide nf-border-glow w-full flex items-center gap-2.5 px-4 py-2.5 text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover border border-nf-border-light hover:border-fandex-primary/40 text-sm transition-all duration-base ease-fandex"
           >
             <FolderOpen className="w-4 h-4" />
             {t("launcher.importLocal")}
@@ -641,7 +655,7 @@ export default function Launcher() {
           {/* 从压缩包导入按钮 */}
           <button
             onClick={() => setImportArchiveOpen(true)}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover border border-nf-border-light hover:border-fandex-secondary/40 text-sm transition-all duration-base ease-fandex"
+            className="nf-icon-slide nf-border-glow nf-border-glow-secondary w-full flex items-center gap-2.5 px-4 py-2.5 text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover border border-nf-border-light hover:border-fandex-secondary/40 text-sm transition-all duration-base ease-fandex"
           >
             <FileArchive className="w-4 h-4" />
             {t("archive.importTitle")}
@@ -665,7 +679,7 @@ export default function Launcher() {
             <button
               onClick={handleBrowseScanDir}
               title={t("launcher.scanDirPlaceholder")}
-              className="flex-shrink-0 p-2 text-xs text-nf-text-tertiary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/40 hover:bg-nf-bg-hover transition duration-fast"
+              className="nf-icon-spin nf-border-glow flex-shrink-0 p-2 text-xs text-nf-text-tertiary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/40 hover:bg-nf-bg-hover transition duration-fast"
             >
               <FolderSearch className="w-4 h-4" />
             </button>
@@ -674,12 +688,12 @@ export default function Launcher() {
             <button
               onClick={handleScan}
               disabled={!scanDir || loading}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse transition duration-fast disabled:opacity-40 disabled:cursor-not-allowed"
+              className="nf-btn-shine group flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-fandex-primary hover:bg-fandex-primary-hover text-nf-text-inverse transition duration-fast disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 transition-transform duration-500 ease-out group-hover:rotate-[360deg]" />
               )}
               {t("launcher.scanDir")}
             </button>
@@ -698,10 +712,24 @@ export default function Launcher() {
           </div>
         </div>
 
-        {/* 版本信息 */}
+        {/* 版本与状态信息:绿点状态指示 + 结构化版本/离线标识 */}
         <div className="px-6 pb-4">
-          <p className="text-[10px] text-nf-text-tertiary">
-            {t("launcher.localReady")} (v{appVersion})
+          <div className="flex items-center gap-2 mb-1">
+            {/* 状态指示绿点:带柔和呼吸光晕 */}
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/60 animate-ping opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            </span>
+            <span className="text-[10px] font-medium text-nf-text-secondary tracking-wide">
+              {t("launcher.statusReady")}
+            </span>
+            <span className="text-[10px] text-nf-text-tertiary/40">·</span>
+            <span className="text-[10px] text-nf-text-tertiary tracking-wide">
+              {t("launcher.statusOffline")}
+            </span>
+          </div>
+          <p className="text-[10px] text-nf-text-tertiary/70 tabular-nums tracking-wide">
+            {t("launcher.statusVersion")} v{appVersion}
           </p>
         </div>
       </aside>
@@ -724,21 +752,30 @@ export default function Launcher() {
             <button
               onClick={() => setWelcomeOpen(true)}
               title={t("welcome.reviewButton")}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs text-nf-text-secondary hover:text-fandex-secondary border border-nf-border-light hover:border-fandex-secondary/40 hover:bg-nf-bg-hover transition duration-fast"
+              className="nf-icon-spark nf-border-glow nf-border-glow-secondary flex items-center gap-1.5 px-3 py-2 text-xs text-nf-text-secondary hover:text-fandex-secondary border border-nf-border-light hover:border-fandex-secondary/40 hover:bg-nf-bg-hover transition duration-fast"
             >
               <Sparkles className="w-3.5 h-3.5" />
               {t("welcome.reviewButton")}
             </button>
+            {/* 外观入口:打开设置对话框并定位到外观分区
+                替代原昼夜/阳光主题快速切换按钮,因当前预设主题不止三种,
+                快速切换会与多预设主题产生冲突,统一改为入口形式 */}
             <button
-              onClick={toggleTheme}
-              title={theme === "dark" ? t("sidebar.switchLight") : t("sidebar.switchDark")}
-              className="p-2 text-nf-text-tertiary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/40 hover:bg-nf-bg-hover transition duration-fast"
+              onClick={() => handleOpenSettings("appearance")}
+              title={t("launcher.openAppearance")}
+              className="nf-icon-spin nf-border-glow flex items-center gap-1.5 px-3 py-2 text-xs text-nf-text-secondary hover:text-fandex-tertiary border border-nf-border-light hover:border-fandex-tertiary/40 hover:bg-nf-bg-hover transition duration-fast"
             >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
+              <Palette className="w-3.5 h-3.5" />
+              {t("launcher.openAppearance")}
+            </button>
+            {/* 设置入口:打开设置对话框(默认顶部) */}
+            <button
+              onClick={() => handleOpenSettings()}
+              title={t("launcher.openSettings")}
+              className="nf-icon-spin nf-border-glow flex items-center gap-1.5 px-3 py-2 text-xs text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/40 hover:bg-nf-bg-hover transition duration-fast"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              {t("launcher.openSettings")}
             </button>
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-nf-text-tertiary transition-colors duration-fast group-focus-within:text-fandex-primary" />
@@ -863,6 +900,13 @@ export default function Launcher() {
         currentVersion={appVersion}
         release={autoCheckRelease}
         onSkip={(version) => setSkipUpdateVersion(version)}
+      />
+
+      {/* 设置对话框：主页右上角入口按钮触发，支持定位到指定分区 */}
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        initialSection={settingsInitialSection}
       />
     </div>
   );

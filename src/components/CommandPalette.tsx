@@ -373,7 +373,7 @@ export default function CommandPalette({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="nf-glass w-full max-w-lg border border-nf-border-light shadow-2xl overflow-hidden">
+      <div className="nf-glass-panel w-full max-w-lg border border-nf-border-light shadow-2xl overflow-hidden">
         {/* 搜索框 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-nf-border-light">
           <Search className="w-4 h-4 text-nf-text-tertiary flex-shrink-0" />

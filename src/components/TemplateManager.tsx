@@ -112,7 +112,7 @@ export default function TemplateManager({ onClose }: TemplateManagerProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="template-manager-title"
-        className="w-full max-w-2xl bg-nf-bg-card border border-nf-border-light shadow-xl overflow-hidden animate-scale-in"
+        className="nf-glass-panel w-full max-w-2xl bg-nf-bg-card border border-nf-border-light shadow-xl overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}

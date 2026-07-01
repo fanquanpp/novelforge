@@ -266,7 +266,7 @@ export default function OutlineToChapters({
       aria-label={t("outlineToChapters.title")}
     >
       <div
-        className="w-full max-w-lg bg-nf-bg border border-nf-border-light rounded-xl shadow-2xl flex flex-col max-h-[80vh]"
+        className="nf-glass-panel w-full max-w-lg bg-nf-bg border border-nf-border-light rounded-xl shadow-2xl flex flex-col max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}

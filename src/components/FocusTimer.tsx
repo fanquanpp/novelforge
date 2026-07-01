@@ -123,7 +123,7 @@ export function FocusTimer({
           <ChevronDown className="w-3 h-3" />
         </button>
         {showPresets && (
-          <div className="absolute bottom-full right-0 mb-1 bg-nf-bg-card border border-nf-border-light shadow-lg py-1 z-10">
+          <div className="nf-glass-panel absolute bottom-full right-0 mb-1 bg-nf-bg-card border border-nf-border-light shadow-lg py-1 z-10">
             {PRESET_DURATIONS.map((d) => (
               <button
                 key={d}

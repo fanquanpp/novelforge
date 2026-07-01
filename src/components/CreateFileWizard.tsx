@@ -271,7 +271,7 @@ export default function CreateFileWizard({
       }}
     >
       <div
-        className="w-full max-w-3xl h-[80vh] max-h-[680px] bg-nf-bg-card border border-nf-border-light shadow-2xl flex flex-col overflow-hidden"
+        className="nf-glass-panel w-full max-w-3xl h-[80vh] max-h-[680px] bg-nf-bg-card border border-nf-border-light shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部：标题 + 步骤指示 + 关闭 */}

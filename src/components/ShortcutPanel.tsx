@@ -165,7 +165,7 @@ export default function ShortcutPanel() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"
-        className="w-full max-w-xl bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
+        className="nf-glass-panel w-full max-w-xl bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-nf-border-light">

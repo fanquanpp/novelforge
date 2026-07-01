@@ -18,7 +18,7 @@ import NovelEditor from "./NovelEditor";
 import WritingStats from "./WritingStats";
 import GlobalSearch from "./GlobalSearch";
 import VolumeManager from "./VolumeManager";
-import SettingsDialog from "./SettingsDialog";
+import SettingsDialog, { type SettingsSection } from "./SettingsDialog";
 import CreateFileDialog from "./CreateFileDialog";
 import CreateFileWizard from "./CreateFileWizard";
 import CommandPalette from "./CommandPalette";
@@ -76,6 +76,8 @@ export default function Workspace() {
   const [focusMode, setFocusMode] = useState(false);
   const [showFocusTimer, setShowFocusTimer] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // 设置对话框打开时定位的分区:外观入口按钮传入 appearance,普通设置入口为 undefined
+  const [settingsInitialSection, setSettingsInitialSection] = useState<SettingsSection | undefined>(undefined);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const { showToast } = useToast();
   const { t } = useI18n();
@@ -392,8 +394,6 @@ export default function Workspace() {
     }
   };
 
-  const showFileList = getCategoryConfig(activeCategory).showFileList;
-
   return (
     <div className="h-screen w-screen flex bg-nf-bg overflow-hidden relative">
       {/* 全局舒缓柔光背景层:弱化纯色压抑感 */}
@@ -401,7 +401,12 @@ export default function Workspace() {
 
       {/* 聚焦模式下隐藏侧边栏 */}
       {!focusMode && (
-        <Sidebar onCreateFile={handleNewFileRequest} onOpenSettings={() => setSettingsOpen(true)} onSwitchCategory={handleSwitchCategory} />
+        <Sidebar
+          onCreateFile={handleNewFileRequest}
+          onOpenSettings={() => { setSettingsInitialSection(undefined); setSettingsOpen(true); }}
+          onOpenAppearance={() => { setSettingsInitialSection("appearance"); setSettingsOpen(true); }}
+          onSwitchCategory={handleSwitchCategory}
+        />
       )}
 
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
@@ -414,9 +419,10 @@ export default function Workspace() {
         </div>
       </div>
 
-      {/* 聚焦模式下隐藏文件列表 */}
-      {!focusMode && showFileList && (
-        <div className="relative z-10 flex">
+      {/* 右侧文件列表：常驻固定面板，不再随聚焦模式或分类切换隐藏，
+          保证布局稳定，避免"活动状态"导致的布局抖动 */}
+      {!focusMode && (
+        <div className="relative z-10 flex flex-shrink-0">
           <FileList onCreateFile={handleNewFileRequest} onSelectFile={handleSelectFile} />
         </div>
       )}
@@ -448,6 +454,7 @@ export default function Workspace() {
       <SettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        initialSection={settingsInitialSection}
       />
 
       {/* 项目导出对话框 */}
@@ -465,7 +472,7 @@ export default function Workspace() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
           onClick={(e) => { if (e.target === e.currentTarget) setShowFirstFileDialog(false); }}
         >
-          <div className="w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden">
+          <div className="nf-glass-panel w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden">
             <div className="px-5 py-4 border-b border-nf-border-light">
               <h3 className="fandex-bar-left text-sm font-semibold font-display text-nf-text">
                 {t("workspace.firstFileTitle")}

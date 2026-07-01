@@ -10,7 +10,7 @@
 // 3. 提供设定库目录扫描辅助函数
 
 import { invoke } from "@tauri-apps/api/core";
-import { readProjectTree } from "./api";
+import { readProjectTree, createFile, deletePath } from "./api";
 import type { FileNode } from "./api";
 
 // ===== 类型定义 =====
@@ -168,4 +168,68 @@ export async function scanCodexEntities(projectPath: string): Promise<CodexEntit
   });
 
   return entities;
+}
+
+// ===== 实体增删 API =====
+
+/**
+ * 解析实体类型对应的实际目录名
+ * 输入: type 实体类型
+ * 输出: 目录名字符串（取 CODEX_TYPE_DIRS 中第一个作为主目录名）
+ * 流程: 查表返回主目录名，若不存在则回退到 "角色"
+ */
+export function getCodexDirName(type: CodexEntityType): string {
+  return CODEX_TYPE_DIRS[type]?.[0] ?? "角色";
+}
+
+/**
+ * 创建新的 Codex 实体文件
+ * 输入:
+ *   projectPath 项目根路径
+ *   type 实体类型（决定写入哪个设定目录）
+ *   name 实体名称（作为文件名与标题）
+ *   aliases 别名列表（可选，写入文件首行"别名: A, B, C"格式）
+ *   content 正文内容（可选，默认为空模板）
+ * 输出: Promise<string> 新建文件的绝对路径
+ * 流程:
+ *   1. 根据 type 解析目标目录名
+ *   2. 拼接相对路径 {目录名}/{name}.txt
+ *   3. 生成文件内容（别名行 + 标题行 + 空模板）
+ *   4. 调用 createFile 创建文件
+ */
+export async function createCodexEntity(
+  projectPath: string,
+  type: CodexEntityType,
+  name: string,
+  aliases: string[] = [],
+  content: string = ""
+): Promise<string> {
+  const dirName = getCodexDirName(type);
+  // 清理文件名：去除非法字符
+  const safeName = name.replace(/[\\/:*?"<>|]/g, "").trim();
+  if (!safeName) throw new Error("实体名称不能为空");
+  const relativePath = `${dirName}/${safeName}.txt`;
+  // 生成文件内容：别名行 + 标题 + 正文
+  const aliasLine = aliases.length > 0 ? `别名: ${aliases.join(", ")}\n` : "";
+  const titleLine = `# ${safeName}\n\n`;
+  const fileContent = `${aliasLine}${titleLine}${content}`;
+  return createFile(projectPath, relativePath, fileContent);
+}
+
+/**
+ * 删除 Codex 实体文件
+ * 输入:
+ *   projectPath 项目根路径
+ *   entity 待删除的实体对象
+ * 输出: Promise<void>
+ * 流程: 调用 deletePath 删除源文件（后端会移至回收站）
+ */
+export async function deleteCodexEntity(
+  projectPath: string,
+  entity: CodexEntity
+): Promise<void> {
+  // 源文件为相对路径，需拼接为绝对路径
+  const sep = navigator.platform.toLowerCase().includes("win") ? "\\" : "/";
+  const absPath = `${projectPath}${sep}${entity.sourceFile.replace(/[\\/]/g, sep)}`;
+  return deletePath(absPath, projectPath);
 }

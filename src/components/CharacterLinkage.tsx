@@ -129,7 +129,7 @@ export function CharacterAppearancePanel({
       />
       {/* 抽屉面板 */}
       <aside
-        className="fixed right-0 top-0 bottom-0 w-[480px] max-w-[90vw] bg-nf-bg border-l border-nf-border-light shadow-2xl z-50 flex flex-col"
+        className="nf-glass-panel fixed right-0 top-0 bottom-0 w-[480px] max-w-[90vw] bg-nf-bg border-l border-nf-border-light shadow-2xl z-50 flex flex-col"
         role="dialog"
         aria-label={t("characterLinkage.appearanceTitle")}
       >
@@ -411,7 +411,7 @@ export function CharacterRenameDialog({
       aria-label={t("characterLinkage.renameTitle")}
     >
       <div
-        className="w-full max-w-md bg-nf-bg border border-nf-border-light rounded-xl shadow-2xl"
+        className="nf-glass-panel w-full max-w-md bg-nf-bg border border-nf-border-light rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}

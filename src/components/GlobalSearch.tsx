@@ -411,7 +411,7 @@ export default function GlobalSearch() {
           onClick={() => setConfirmOpen(false)}
         >
           <div
-            className="w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
+            className="nf-glass-panel w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 border-b border-nf-border-light flex items-center gap-2.5">

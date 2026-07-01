@@ -116,7 +116,7 @@ export default function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="welcome-title"
-        className="w-full max-w-2xl bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden max-h-[88vh] flex flex-col"
+        className="nf-glass-panel w-full max-w-2xl bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden max-h-[88vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部：品牌标识 + 关闭按钮 */}

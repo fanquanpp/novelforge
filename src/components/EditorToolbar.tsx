@@ -41,9 +41,6 @@ import {
   Heading2,
   Heading3,
   Heading4,
-  List,
-  ListOrdered,
-  ListChecks,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -162,7 +159,7 @@ function Dropdown({ trigger, children, panelWidth = "w-56", active = false, titl
       </button>
       {open && (
         <div
-          className={`absolute top-full left-0 mt-1 ${panelWidth} bg-nf-bg-card border border-nf-border-light shadow-lg z-50 max-h-96 overflow-y-auto`}
+          className={`absolute top-full left-0 mt-1 ${panelWidth} nf-glass-panel bg-nf-bg-card border border-nf-border-light shadow-lg z-50 max-h-96 overflow-y-auto`}
           onClick={(e) => e.stopPropagation()}
         >
           {children}
@@ -499,7 +496,7 @@ function SessionStats({
           onClick={() => setTargetDialogOpen(false)}
         >
           <div
-            className="w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
+            className="nf-glass-panel w-full max-w-sm bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 border-b border-nf-border-light">
@@ -692,7 +689,8 @@ export default function EditorToolbar({
     return para.attrs["data-lyrics"] === "true";
   };
 
-  // 快速加引号：用""包裹选中文本，无选中则在引号间放置光标
+  // 快速加中文双引号：用“”包裹选中文本，无选中则在引号间放置光标
+  // 使用 Unicode 字符 \u201c（左双引号“）与 \u201d（右双引号”）
   const handleQuickQuote = () => {
     if (!editor) return;
     const { from, to } = editor.state.selection;
@@ -705,6 +703,44 @@ export default function EditorToolbar({
     } else {
       editor.chain().focus()
         .insertContent("\u201c\u201d")
+        .setTextSelection(from + 1)
+        .run();
+    }
+  };
+
+  // 快速加中文单引号：用‘’包裹选中文本，无选中则在引号间放置光标
+  // 使用 Unicode 字符 \u2018（左单引号‘）与 \u2019（右单引号’）
+  const handleSingleQuote = () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, "\n");
+    if (selectedText) {
+      editor.chain().focus()
+        .deleteSelection()
+        .insertContent(`\u2018${selectedText}\u2019`)
+        .run();
+    } else {
+      editor.chain().focus()
+        .insertContent("\u2018\u2019")
+        .setTextSelection(from + 1)
+        .run();
+    }
+  };
+
+  // 快速加直角引号（方形引号）：用「」包裹选中文本，无选中则在引号间放置光标
+  // 使用 Unicode 字符 \u300c（左直角引号「）与 \u300d（右直角引号」）
+  const handleCornerQuote = () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, "\n");
+    if (selectedText) {
+      editor.chain().focus()
+        .deleteSelection()
+        .insertContent(`\u300c${selectedText}\u300d`)
+        .run();
+    } else {
+      editor.chain().focus()
+        .insertContent("\u300c\u300d")
         .setTextSelection(from + 1)
         .run();
     }
@@ -788,6 +824,7 @@ export default function EditorToolbar({
             type="button"
             onClick={onSave}
             disabled={!dirty || saving}
+            title={t("app.save")}
             tabIndex={-1}
             className={`nf-tool-btn flex items-center gap-1 px-2.5 py-1 ease-fandex disabled:opacity-30 disabled:cursor-not-allowed ${
               dirty
@@ -821,38 +858,36 @@ export default function EditorToolbar({
             >
               <Minus className="w-4 h-4" />
             </ToolbarButton>
-            <ToolbarButton
-              onClick={handleQuickQuote}
-              active={false}
-              title={t("editor.quickQuote")}
+            {/* 中文引号下拉菜单：提供中文双引号、中文单引号、直角引号三种包裹方式 */}
+            <Dropdown
+              trigger={<Quote className="w-4 h-4" />}
+              title={t("editor.chineseQuote")}
+              panelWidth="w-44"
             >
-              <Quote className="w-4 h-4" />
-            </ToolbarButton>
-          </div>
-          <Divider />
-          {/* 列表组 */}
-          <div className="flex items-center gap-0.5 bg-nf-bg-card/50 px-1 py-0.5 border border-nf-border-light/40">
-            <ToolbarButton
-              onClick={() => editor?.chain().focus().toggleBulletList().run()}
-              active={editor?.isActive("bulletList") || false}
-              title={t("editor.bulletList")}
-            >
-              <List className="w-4 h-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-              active={editor?.isActive("orderedList") || false}
-              title={t("editor.orderedList")}
-            >
-              <ListOrdered className="w-4 h-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor?.chain().focus().toggleTaskList().run()}
-              active={editor?.isActive("taskList") || false}
-              title={t("editor.taskList")}
-            >
-              <ListChecks className="w-4 h-4" />
-            </ToolbarButton>
+              <div className="py-1">
+                <button
+                  onClick={handleQuickQuote}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-nf-text hover:bg-nf-bg-hover transition duration-fast"
+                >
+                  <Quote className="w-3.5 h-3.5 text-fandex-primary" />
+                  <span>{t("editor.doubleQuote")}</span>
+                </button>
+                <button
+                  onClick={handleSingleQuote}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-nf-text hover:bg-nf-bg-hover transition duration-fast"
+                >
+                  <Quote className="w-3.5 h-3.5 text-fandex-secondary" />
+                  <span>{t("editor.singleQuote")}</span>
+                </button>
+                <button
+                  onClick={handleCornerQuote}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-nf-text hover:bg-nf-bg-hover transition duration-fast"
+                >
+                  <Quote className="w-3.5 h-3.5 text-fandex-tertiary" />
+                  <span>{t("editor.cornerQuote")}</span>
+                </button>
+              </div>
+            </Dropdown>
           </div>
           <Divider />
           {/* 对齐组 */}
@@ -887,16 +922,9 @@ export default function EditorToolbar({
             </ToolbarButton>
           </div>
           <Divider />
-          {/* 插入组：表格 / 引用块 / 诗歌 / 歌词（链接和颜色已移至 BubbleMenu） */}
+          {/* 插入组：表格 / 诗歌 / 歌词（链接和颜色已移至 BubbleMenu，Markdown 引用块已移除改为中文引号下拉） */}
           <div className="flex items-center gap-0.5 bg-nf-bg-card/50 px-1 py-0.5 border border-nf-border-light/40">
             <TableMenu editor={editor} />
-            <ToolbarButton
-              onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-              active={editor?.isActive("blockquote") || false}
-              title={t("editor.blockquote")}
-            >
-              <Quote className="w-4 h-4 rotate-180" />
-            </ToolbarButton>
             <ToolbarButton
               onClick={handlePoetryToggle}
               active={isPoetryActive()}

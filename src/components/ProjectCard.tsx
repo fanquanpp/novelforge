@@ -109,28 +109,46 @@ function ProjectCardImpl({ project, projectInfo, onDelete }: ProjectCardProps) {
       aria-label={t("projectcard.openProject") + ": " + project.name}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="nf-card-sheen nf-hover-float group relative bg-nf-bg-card backdrop-blur-none border border-nf-border-light hover:border-fandex-primary/50 cursor-pointer flex overflow-hidden focus:outline-none focus:ring-1 focus:ring-fandex-primary focus:ring-inset hover:shadow-xl hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-base"
+      className="nf-card-sheen nf-card-dots nf-hover-float group relative bg-nf-bg-card backdrop-blur-none border border-nf-border-light hover:border-fandex-primary/50 cursor-pointer flex overflow-hidden focus:outline-none focus:ring-1 focus:ring-fandex-primary focus:ring-inset hover:shadow-xl hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-base"
       style={{ backgroundColor: 'var(--fandex-bg-card)' }}
     >
-      {/* 背景装饰图案:不占位,绝对定位右下角,低透明度,不影响文字排版 */}
+      {/* 背景装饰图案:不占位,绝对定位右下角,低透明度,不影响文字排版
+       * 组合:羽毛笔(呼应品牌)+ 同心圆(层次感)+ 几何线条(精致度) */}
       <svg
-        className="absolute bottom-0 right-0 w-32 h-32 opacity-[0.04] pointer-events-none group-hover:opacity-[0.08] transition-opacity duration-500"
+        className="absolute -bottom-4 -right-4 w-40 h-40 opacity-[0.05] pointer-events-none group-hover:opacity-[0.1] transition-opacity duration-500"
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
+        {/* 同心圆装饰:营造空间纵深感 */}
+        <circle cx="80" cy="80" r="30" stroke="currentColor" strokeWidth="0.5" className="text-fandex-primary" opacity="0.4" />
+        <circle cx="80" cy="80" r="22" stroke="currentColor" strokeWidth="0.5" className="text-fandex-secondary" opacity="0.5" />
+        <circle cx="80" cy="80" r="14" stroke="currentColor" strokeWidth="0.5" className="text-fandex-tertiary" opacity="0.6" />
         {/* 装饰性羽毛笔图案,呼应品牌主题 */}
         <path
           d="M20 80 L70 30 M70 30 Q80 20 75 15 Q70 10 60 20 L70 30 Z M65 35 L75 25 M60 40 L70 30 M55 45 L65 35 M50 50 L60 40 M45 55 L55 45 M40 60 L50 50 M35 65 L45 55 M30 70 L40 60 M25 75 L35 65"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="1.2"
           strokeLinecap="round"
           className="text-fandex-primary"
         />
-        {/* 装饰圆点 */}
+        {/* 装饰圆点:星光点缀 */}
         <circle cx="78" cy="22" r="2" className="text-fandex-secondary" fill="currentColor" />
         <circle cx="85" cy="15" r="1.5" className="text-fandex-tertiary" fill="currentColor" />
+        <circle cx="92" cy="8" r="1" className="text-fandex-primary" fill="currentColor" opacity="0.7" />
+      </svg>
+      {/* 左上角微小几何装饰:平衡构图,不占位不影响文字 */}
+      <svg
+        className="absolute top-2 right-2 w-10 h-10 opacity-[0.06] pointer-events-none group-hover:opacity-[0.12] transition-opacity duration-500"
+        viewBox="0 0 40 40"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        {/* 几何菱形+对角线,精致科技感 */}
+        <path d="M20 4 L36 20 L20 36 L4 20 Z" stroke="currentColor" strokeWidth="0.8" className="text-fandex-primary" />
+        <path d="M20 4 L20 36 M4 20 L36 20" stroke="currentColor" strokeWidth="0.4" className="text-fandex-secondary" opacity="0.6" />
       </svg>
 
       {/* 左侧渐变色条 - 加宽并增加光晕 */}

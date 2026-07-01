@@ -82,7 +82,7 @@ export default function CreateFileDialog({
       }}
     >
       <div
-        className="w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
+        className="nf-glass-panel w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-lg overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-nf-border-light">

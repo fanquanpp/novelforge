@@ -273,7 +273,7 @@ export default function VolumeChapterGenerator({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] bg-nf-bg-card border border-nf-border-light shadow-lg flex flex-col overflow-hidden"
+        className="nf-glass-panel w-full max-w-2xl max-h-[90vh] bg-nf-bg-card border border-nf-border-light shadow-lg flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}

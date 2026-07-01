@@ -152,7 +152,7 @@ export default function OutlineView({ editor }: OutlineViewProps) {
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fandex-nav-blur absolute right-2 bottom-2 p-1.5 border border-nf-border-light bg-nf-bg-card hover:bg-nf-bg-hover transition duration-fast z-10"
+        className="fandex-nav-blur nf-glass-panel absolute right-2 bottom-2 p-1.5 border border-nf-border-light bg-nf-bg-card hover:bg-nf-bg-hover transition duration-fast z-10"
         title={t("outline.open")}
       >
         <ListTree className="w-4 h-4 text-nf-text-tertiary" />
@@ -169,7 +169,7 @@ export default function OutlineView({ editor }: OutlineViewProps) {
   };
 
   return (
-    <div className="absolute right-2 top-2 bottom-2 w-56 bg-nf-bg-card border border-nf-border-light shadow-lg flex flex-col z-10 overflow-hidden">
+    <div className="nf-glass-panel absolute right-2 top-2 bottom-2 w-56 bg-nf-bg-card border border-nf-border-light shadow-lg flex flex-col z-10 overflow-hidden">
       {/* 头部：标题 + 计数 + 折叠按钮 */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-nf-border-light flex-shrink-0">
         <div className="flex items-center gap-1.5">

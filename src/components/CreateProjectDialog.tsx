@@ -137,7 +137,7 @@ export default function CreateProjectDialog({
       }}
     >
       <div
-        className="w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-xl overflow-hidden animate-scale-in"
+        className="nf-glass-panel w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-xl overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}

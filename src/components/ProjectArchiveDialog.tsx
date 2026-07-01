@@ -183,7 +183,7 @@ export default function ProjectArchiveDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
       onClick={handleOverlayClick}
     >
-      <div className="w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-2xl max-h-[85vh] flex flex-col">
+      <div className="nf-glass-panel w-full max-w-lg bg-nf-bg-card border border-nf-border-light shadow-2xl max-h-[85vh] flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-nf-border-light flex-shrink-0">
           <h2 className="fandex-bar-left text-base font-bold font-display text-nf-text flex items-center gap-2">

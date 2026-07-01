@@ -11,6 +11,7 @@
 // 3. 选中实体后懒加载调用后端扫描出现位置
 // 4. 渲染出现追踪结果：文件名 + 次数 + 上下文预览
 // 5. 支持点击预览跳转到对应文件编辑
+// 6. 支持内嵌快捷新增实体与删除实体（不依赖外部向导）
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
@@ -25,6 +26,11 @@ import {
   ChevronRight,
   RefreshCw,
   Inbox,
+  Plus,
+  Trash2,
+  X,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { useAppStore } from "../lib/store";
 import { useToast } from "../lib/toast";
@@ -32,11 +38,14 @@ import { useI18n } from "../lib/i18n";
 import {
   scanCodexEntities,
   scanEntityMentions,
+  createCodexEntity,
+  deleteCodexEntity,
   CODEX_TYPE_LABELS,
   type CodexEntity,
   type CodexEntityType,
   type EntityMention,
 } from "../lib/codexApi";
+import ConfirmDialog from "./ConfirmDialog";
 
 // Codex 实体类型图标映射
 const TYPE_ICONS: Record<CodexEntityType, React.ComponentType<{ className?: string }>> = {
@@ -70,6 +79,18 @@ export default function CodexPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mentionLoading, setMentionLoading] = useState(false);
   const [mentions, setMentions] = useState<EntityMention[] | null>(null);
+
+  // 新增实体对话框状态
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [newEntityType, setNewEntityType] = useState<CodexEntityType>("character");
+  const [newEntityName, setNewEntityName] = useState("");
+  const [newEntityAliases, setNewEntityAliases] = useState("");
+  const [newEntityContent, setNewEntityContent] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  // 删除确认对话框状态
+  const [deleteTarget, setDeleteTarget] = useState<CodexEntity | null>(null);
 
   // 扫描设定库实体
   const loadEntities = useCallback(async () => {
@@ -159,6 +180,83 @@ export default function CodexPanel() {
     [setSelectedFile, setActiveCategory]
   );
 
+  // 打开新增实体对话框：指定类型预填
+  const handleOpenAddDialog = useCallback((type: CodexEntityType) => {
+    setNewEntityType(type);
+    setNewEntityName("");
+    setNewEntityAliases("");
+    setNewEntityContent("");
+    setAddDialogOpen(true);
+    setAddMenuOpen(false);
+  }, []);
+
+  // 提交新增实体：调用后端创建文件后刷新列表
+  const handleCreateEntity = useCallback(async () => {
+    if (!currentProject) return;
+    const name = newEntityName.trim();
+    if (!name) {
+      showToast("warning", t("codex.nameRequired"));
+      return;
+    }
+    // 检查重名：同类型下不允许重名
+    const exists = entities.some(
+      (e) => e.type === newEntityType && e.name === name
+    );
+    if (exists) {
+      showToast("warning", t("codex.nameExists", { name }));
+      return;
+    }
+    setCreating(true);
+    try {
+      // 解析别名：按逗号分隔
+      const aliases = newEntityAliases
+        .split(/[,，]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      await createCodexEntity(
+        currentProject.path,
+        newEntityType,
+        name,
+        aliases,
+        newEntityContent
+      );
+      showToast("success", t("codex.createSuccess", { name }));
+      setAddDialogOpen(false);
+      // 刷新实体列表
+      await loadEntities();
+      // 自动选中新创建的实体
+      const newId = `${newEntityType}-${name}`;
+      setSelectedId(newId);
+    } catch (e) {
+      showToast("error", t("codex.createFailed", { error: String(e) }));
+    } finally {
+      setCreating(false);
+    }
+  }, [currentProject, newEntityName, newEntityAliases, newEntityContent, newEntityType, entities, showToast, t, loadEntities]);
+
+  // 删除实体：打开确认对话框
+  const handleDeleteEntity = useCallback((entity: CodexEntity) => {
+    setDeleteTarget(entity);
+  }, []);
+
+  // 确认删除实体：调用后端删除文件后刷新列表
+  const handleConfirmDelete = useCallback(async () => {
+    if (!currentProject || !deleteTarget) return;
+    try {
+      await deleteCodexEntity(currentProject.path, deleteTarget);
+      showToast("success", t("codex.deleteSuccess", { name: deleteTarget.name }));
+      // 若删除的是当前选中项，清空选中
+      if (selectedId === `${deleteTarget.type}-${deleteTarget.id}`) {
+        setSelectedId(null);
+      }
+      setDeleteTarget(null);
+      // 刷新实体列表
+      await loadEntities();
+    } catch (e) {
+      showToast("error", t("codex.deleteFailed", { error: String(e) }));
+    }
+  }, [currentProject, deleteTarget, selectedId, showToast, t, loadEntities]);
+
   // 总出现次数统计
   const totalMentions = useMemo(() => {
     if (!mentions) return 0;
@@ -169,24 +267,63 @@ export default function CodexPanel() {
     <div className="flex flex-row-reverse h-full bg-nf-bg-panel">
       {/* 最右侧：实体列表（作为右侧导航栏，与其它分类的文件列表位置一致） */}
       <div className="w-72 min-w-[260px] border-l border-nf-border-light flex flex-col bg-nf-bg-sidebar flex-shrink-0">
-        {/* 头部：标题 + 刷新 */}
-        <div className="px-4 py-3 border-b border-nf-border-light flex items-center justify-between">
+        {/* 头部：标题 + 新增 + 刷新（固定项，禁止压缩） */}
+        <div className="flex-shrink-0 px-4 py-3 border-b border-nf-border-light flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Library className="w-4 h-4 text-fandex-primary" />
             <h2 className="text-sm font-semibold text-nf-text">{t("codex.title")}</h2>
           </div>
-          <button
-            onClick={loadEntities}
-            disabled={loading}
-            title={t("codex.refresh")}
-            className="text-nf-text-tertiary hover:text-fandex-primary transition-colors duration-150 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* 新增实体下拉菜单：提供按类型快速新增 */}
+            <div className="relative">
+              <button
+                onClick={() => setAddMenuOpen((v) => !v)}
+                title={t("codex.addEntity")}
+                className="flex items-center gap-0.5 px-2 py-1 text-xs text-nf-text-secondary hover:text-fandex-primary border border-nf-border-light hover:border-fandex-primary/60 hover:bg-fandex-primary/5 transition duration-fast"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <ChevronDown className="w-3 h-3 opacity-70" />
+              </button>
+              {addMenuOpen && (
+                <>
+                  {/* 透明遮罩：点击外部关闭下拉 */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setAddMenuOpen(false)}
+                  />
+                  <div className="nf-glass-panel absolute top-full right-0 mt-1 w-44 bg-nf-bg-card border border-nf-border-light shadow-lg z-50 py-1">
+                    {/* 按类型快速新增 */}
+                    {(["character", "worldview", "glossary", "material"] as CodexEntityType[]).map((type) => {
+                      const Icon = TYPE_ICONS[type];
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => handleOpenAddDialog(type)}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-nf-text hover:bg-nf-bg-hover transition duration-fast"
+                        >
+                          <Icon className="w-3.5 h-3.5 text-fandex-primary" />
+                          <span>{CODEX_TYPE_LABELS[type]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+            {/* 刷新按钮 */}
+            <button
+              onClick={loadEntities}
+              disabled={loading}
+              title={t("codex.refresh")}
+              className="text-nf-text-tertiary hover:text-fandex-primary transition-colors duration-150 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
         </div>
 
-        {/* 搜索框 */}
-        <div className="px-3 py-2 border-b border-nf-border-light">
+        {/* 搜索框（固定项，禁止压缩） */}
+        <div className="flex-shrink-0 px-3 py-2 border-b border-nf-border-light">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-nf-text-tertiary" />
             <input
@@ -227,29 +364,45 @@ export default function CodexPanel() {
                   {list!.map((entity) => {
                     const isSelected = entity.id === selectedId;
                     return (
-                      <button
+                      <div
                         key={`${entity.type}-${entity.id}`}
-                        onClick={() => setSelectedId(entity.id)}
                         className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-all duration-150 relative group ${
                           isSelected
                             ? "bg-fandex-primary/10 text-fandex-primary"
                             : "text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover"
                         }`}
                       >
+                        {/* 左侧色条激活指示器 */}
                         <span
                           className={`absolute left-0 top-1 bottom-1 w-[3px] bg-fandex-primary transition-all duration-150 ${
                             isSelected ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                           }`}
                           style={{ transformOrigin: "center" }}
                         />
-                        <FileText className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
-                        <span className="truncate flex-1 text-left">{entity.name}</span>
-                        {entity.aliases.length > 0 && (
-                          <span className="text-[10px] text-nf-text-tertiary">
-                            +{entity.aliases.length}
-                          </span>
-                        )}
-                      </button>
+                        <button
+                          onClick={() => setSelectedId(entity.id)}
+                          className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                        >
+                          <FileText className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
+                          <span className="truncate flex-1">{entity.name}</span>
+                          {entity.aliases.length > 0 && (
+                            <span className="text-[10px] text-nf-text-tertiary">
+                              +{entity.aliases.length}
+                            </span>
+                          )}
+                        </button>
+                        {/* 删除按钮：悬停时显示 */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEntity(entity);
+                          }}
+                          title={t("codex.deleteEntity")}
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-nf-text-tertiary hover:text-red-500 transition duration-fast p-0.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -263,8 +416,8 @@ export default function CodexPanel() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {selectedEntity ? (
           <>
-            {/* 详情头部 */}
-            <div className="px-6 py-4 border-b border-nf-border-light">
+            {/* 详情头部（固定项，禁止压缩，仅下方列表滚动） */}
+            <div className="flex-shrink-0 px-6 py-4 border-b border-nf-border-light">
               <div className="flex items-center gap-3 mb-2">
                 {(() => {
                   const Icon = TYPE_ICONS[selectedEntity.type];
@@ -344,6 +497,138 @@ export default function CodexPanel() {
           </div>
         )}
       </div>
+
+      {/* 新增实体对话框（内嵌快速新增） */}
+      {addDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
+          onClick={() => !creating && setAddDialogOpen(false)}
+        >
+          <div
+            className="nf-glass-panel w-full max-w-md bg-nf-bg-card border border-nf-border-light shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 头部 */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-nf-border-light">
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-fandex-primary" />
+                <h3 className="fandex-bar-left text-sm font-semibold font-display text-nf-text">
+                  {t("codex.addEntityTitle")}
+                </h3>
+              </div>
+              <button
+                onClick={() => setAddDialogOpen(false)}
+                disabled={creating}
+                className="p-1 text-nf-text-tertiary hover:text-nf-text transition duration-fast disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {/* 表单区 */}
+            <div className="px-5 py-4 space-y-3">
+              {/* 实体类型 */}
+              <div>
+                <label className="block text-xs text-nf-text-tertiary mb-1.5">
+                  {t("codex.entityType")}
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(["character", "worldview", "glossary", "material"] as CodexEntityType[]).map((type) => {
+                    const Icon = TYPE_ICONS[type];
+                    const isActive = newEntityType === type;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => setNewEntityType(type)}
+                        className={`flex flex-col items-center gap-1 py-2 border transition duration-fast ${
+                          isActive
+                            ? "border-fandex-primary bg-fandex-primary/10 text-fandex-primary"
+                            : "border-nf-border-light text-nf-text-secondary hover:border-fandex-primary/40"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="text-[10px]">{CODEX_TYPE_LABELS[type]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* 实体名称 */}
+              <div>
+                <label className="block text-xs text-nf-text-tertiary mb-1.5">
+                  {t("codex.entityName")}
+                </label>
+                <input
+                  type="text"
+                  value={newEntityName}
+                  onChange={(e) => setNewEntityName(e.target.value)}
+                  placeholder={t("codex.entityNamePlaceholder")}
+                  autoFocus
+                  className="w-full bg-nf-bg border border-nf-border-light px-3 py-2 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none focus:border-fandex-primary/60 transition duration-fast"
+                />
+              </div>
+              {/* 别名 */}
+              <div>
+                <label className="block text-xs text-nf-text-tertiary mb-1.5">
+                  {t("codex.aliasesPlaceholder")}
+                </label>
+                <input
+                  type="text"
+                  value={newEntityAliases}
+                  onChange={(e) => setNewEntityAliases(e.target.value)}
+                  placeholder={t("codex.aliasesPlaceholder")}
+                  className="w-full bg-nf-bg border border-nf-border-light px-3 py-2 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none focus:border-fandex-primary/60 transition duration-fast"
+                />
+              </div>
+              {/* 正文内容（可选） */}
+              <div>
+                <label className="block text-xs text-nf-text-tertiary mb-1.5">
+                  {t("codex.entityContent")}
+                </label>
+                <textarea
+                  value={newEntityContent}
+                  onChange={(e) => setNewEntityContent(e.target.value)}
+                  placeholder={t("codex.entityContentPlaceholder")}
+                  rows={3}
+                  className="w-full bg-nf-bg border border-nf-border-light px-3 py-2 text-sm text-nf-text placeholder-nf-text-tertiary focus:outline-none focus:border-fandex-primary/60 transition duration-fast resize-none"
+                />
+              </div>
+            </div>
+            {/* 底部操作区 */}
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-nf-border-light">
+              <button
+                onClick={() => setAddDialogOpen(false)}
+                disabled={creating}
+                className="nf-tool-btn px-3 py-1.5 text-sm text-nf-text-secondary hover:text-nf-text hover:bg-nf-bg-hover transition duration-fast"
+              >
+                {t("codex.cancel")}
+              </button>
+              <button
+                onClick={handleCreateEntity}
+                disabled={creating || !newEntityName.trim()}
+                className="nf-tool-btn group flex items-center gap-1.5 px-4 py-1.5 bg-fandex-primary hover:bg-fandex-primary-hover text-sm font-medium text-nf-text-inverse transition duration-fast disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {creating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {creating ? t("app.creating") : t("codex.create")}
+                {!creating && (
+                  <Sparkles className="w-3 h-3 opacity-70 group-hover:opacity-100 transition-opacity" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 删除实体确认对话框 */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t("codex.deleteEntity")}
+        message={deleteTarget ? `${t("codex.deleteConfirm", { name: deleteTarget.name })}\n${t("codex.deleteConfirmDesc")}` : ""}
+        type="danger"
+        confirmLabel={t("app.delete")}
+        cancelLabel={t("app.cancel")}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
